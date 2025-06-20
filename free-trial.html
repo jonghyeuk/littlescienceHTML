@@ -509,16 +509,19 @@
                     btn.innerHTML = '✅';
                     
                     showSuccess(`
-                        <h4>🎉 무료 체험 코드가 발송되었습니다!</h4>
-                        <p><strong>${email}</strong>으로 액세스 코드를 보내드렸습니다.</p>
-                        <p>📧 이메일을 확인하시고 코드를 입력하여 체험을 시작하세요!</p>
+                        <h4>🎉 무료 체험 요청이 전송되었습니다!</h4>
+                        <p><strong>${email}</strong>으로 액세스 코드가 발송됩니다.</p>
+                        <p>📧 몇 분 내로 이메일을 확인해주세요!</p>
                         <br>
                         <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 10px; margin-top: 15px;">
                             <strong>📌 다음 단계:</strong><br>
-                            1️⃣ 이메일 확인<br>
+                            1️⃣ 이메일 확인 (2-3분 소요)<br>
                             2️⃣ 액세스 코드 복사<br>
                             3️⃣ 메인 사이트에서 코드 입력<br>
                             4️⃣ 20분 무료 체험 시작!
+                        </div>
+                        <div style="background: rgba(255,235,59,0.2); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 14px;">
+                            💡 새 창이 열렸다면 처리 결과를 확인할 수 있습니다.
                         </div>
                     `);
                     
@@ -601,48 +604,40 @@
                     };
                     
                     console.log('📤 서버로 전송하는 데이터:', requestData);
-                    console.log('🌐 요청 URL:', scriptUrl);
+                    console.log('🌐 CORS 우회 방식으로 요청');
                     
-                    const response = await fetch(scriptUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(requestData),
-                        mode: 'cors'
+                    // 🔥 CORS 우회: 동적 form 생성 방식
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = scriptUrl;
+                    form.target = '_blank'; // 새 창에서 열기
+                    form.style.display = 'none';
+                    
+                    // 데이터 추가
+                    Object.keys(requestData).forEach(key => {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = key;
+                        input.value = requestData[key];
+                        form.appendChild(input);
                     });
                     
-                    console.log('📥 서버 응답 상태:', response.status, response.statusText);
+                    document.body.appendChild(form);
+                    form.submit();
+                    document.body.removeChild(form);
                     
-                    if (!response.ok) {
-                        throw new Error(`서버 응답 오류: ${response.status} ${response.statusText}`);
-                    }
+                    console.log('✅ 폼 제출 완료 - 새 창에서 결과 확인');
                     
-                    const data = await response.json();
-                    console.log('📋 서버 응답 데이터:', data);
-                    
-                    if (data.success) {
-                        console.log('✅ 성공!');
-                        resolve(data);
-                    } else {
-                        console.log('❌ 서버에서 실패 응답:', data.message);
-                        // 서버에서 온 구체적인 에러 메시지 사용
-                        reject(new Error(data.message || '서버 오류가 발생했습니다.'));
-                    }
+                    // 성공으로 처리 (실제 결과는 새 창에서 확인)
+                    resolve({
+                        success: true,
+                        message: '요청이 전송되었습니다. 새 창에서 결과를 확인하세요.',
+                        email: email
+                    });
                     
                 } catch (error) {
                     console.error('💥 processFreeTrial 에러:', error);
-                    
-                    // 네트워크 에러인지 확인
-                    if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                        console.error('🌐 네트워크 연결 문제');
-                        reject(new Error('네트워크 연결을 확인해주세요.'));
-                    } else if (error.message.includes('CORS')) {
-                        console.error('🚫 CORS 문제');
-                        reject(new Error('서버 연결 설정에 문제가 있습니다.'));
-                    } else {
-                        reject(error);
-                    }
+                    reject(error);
                 }
             });
         }
