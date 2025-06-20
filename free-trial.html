@@ -504,35 +504,34 @@
             // 무료 체험 요청 처리
             // HTML의 processFreeTrial 함수를 이렇게 간단하게 수정하세요:
 
-function processFreeTrial(email) {
+            function processFreeTrial(email) {
     return new Promise(async (resolve, reject) => {
         try {
             console.log('🚀 무료체험 요청 시작:', email);
-            
+
             // IP 주소와 기기 핑거프린트 가져오기
             const userIP = await getUserIP();
             const deviceFingerprint = generateDeviceFingerprint();
-            
+
             console.log('📤 전송 중...');
-            
-            // Google Apps Script URL
+
             const scriptUrl = 'https://script.google.com/macros/s/AKfycbzJn7ku_zQvtb-GP0Z_-QA1O1VWugYjc1_FIldnRbjwj1J6leheeRGqJgIt9nnokkXR0Q/exec';
-            
-            // 🔥 간단한 form submit (참고 코드와 동일한 방식)
+
+            // 폼 생성
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = scriptUrl;
             form.target = '_blank'; // 새 창에서 결과 보기
             form.style.display = 'none';
-            
-            // 데이터 추가
+
+            // 데이터 필드
             const fields = {
                 action: 'free_trial',
                 userEmail: email,
                 userIP: userIP,
                 deviceFingerprint: deviceFingerprint
             };
-            
+
             Object.keys(fields).forEach(key => {
                 const input = document.createElement('input');
                 input.type = 'hidden';
@@ -540,31 +539,31 @@ function processFreeTrial(email) {
                 input.value = fields[key];
                 form.appendChild(input);
             });
-            
+
             document.body.appendChild(form);
             form.submit();
-            
-            // 폼 정리
+
+            // 폼 제거
             setTimeout(() => {
                 if (form.parentNode) {
                     document.body.removeChild(form);
                 }
             }, 1000);
-            
+
             console.log('✅ 전송 완료 - 새 창에서 결과 확인');
-            
-            // 즉시 성공으로 처리 (실제 결과는 새 창에서 확인)
+
             resolve({
                 success: true,
                 message: '전송 완료! 새 창에서 결과를 확인하세요.'
             });
-            
+
         } catch (error) {
             console.error('💥 전송 실패:', error);
             reject(error);
         }
     });
 }
+
         
         // IP 주소 가져오기
         async function getUserIP() {
