@@ -1,0 +1,16 @@
+{
+  "hosting": {
+    "public": "C:\\Users\\jongh\\Desktop\\Ddrive\\2025\\과학소논문 프로젝트\\html",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
