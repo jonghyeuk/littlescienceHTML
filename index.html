@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>과학소논문 주제선정서비스 - LittleScienceAI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Malgun Gothic', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            padding: 1rem 0;
+        }
+
+        .nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #626C3B;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: color 0.3s;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+        }
+
+        .nav-links a:hover {
+            color: #626C3B;
+            background: rgba(98, 108, 59, 0.1);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #626C3B 0%, #83792E 100%);
+            color: white;
+            padding: 120px 2rem 80px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)" /></svg>');
+            opacity: 0.3;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            min-width: 180px;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #626C3B;
+        }
+
+        .btn-primary:hover {
+            background: #f8f9fa;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn-secondary:hover {
+            background: white;
+            color: #626C3B;
+        }
+
+        /* Section Styles */
+        .section {
+            padding: 80px 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+            text-align: center;
+            color: #333;
+        }
+
+        /* Service Overview */
+        .service-overview {
+            background: linear-gradient(135deg, #2C3E50 0%, #34495E 100%);
+            color: white;
+        }
+
+        .service-overview .section-title {
+            color: white;
+        }
+
+        .service-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .step-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s;
+        }
+
+        .step-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .step-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        .step-icon.green { background: #626C3B; }
+        .step-icon.brown { background: #83792E; }
+        .step-icon.orange { background: #E8AF3B; }
+        .step-icon.copper { background: #CC914D; }
+
+        .step-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .step-description {
+            opacity: 0.9;
+        }
+
+        /* Database Section */
+        .database-section {
+            background: linear-gradient(135deg, #626C3B 0%, #83792E 100%);
+            color: white;
+        }
+
+        .database-section .section-title {
+            color: white;
+        }
+
+        .database-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 3rem;
+            margin-top: 3rem;
+        }
+
+        .database-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2.5rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .database-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .database-card ul {
+            list-style: none;
+        }
+
+        .database-card li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .database-card li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #E8AF3B;
+            font-weight: bold;
+        }
+
+        /* Process Timeline */
+        .process-section {
+            background: #f8f9fa;
+        }
+
+        .timeline {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .timeline-item:nth-child(even) {
+            flex-direction: row-reverse;
+            text-align: right;
+        }
+
+        .timeline-number {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 1.2rem;
+            margin: 0 2rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .timeline-number.green { background: #626C3B; }
+        .timeline-number.brown { background: #83792E; }
+        .timeline-number.orange { background: #E8AF3B; color: #333; }
+        .timeline-number.copper { background: #CC914D; color: #333; }
+        .timeline-number.red { background: #F44444; }
+
+        .timeline-content {
+            flex: 1;
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .timeline-content h3 {
+            color: #626C3B;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        /* Topics Section */
+        .topics-section {
+            background: linear-gradient(135deg, #626C3B 0%, #83792E 100%);
+            color: white;
+        }
+
+        .topics-section .section-title {
+            color: white;
+        }
+
+        .topics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .topic-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s;
+        }
+
+        .topic-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .topic-image {
+            height: 200px;
+            background: linear-gradient(45deg, #83792E, #E8AF3B);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            transition: all 0.3s ease;
+        }
+
+        .topic-card:hover .topic-image {
+            font-size: 5.5rem;
+            transform: scale(1.1);
+        }
+
+        .topic-content {
+            padding: 2rem;
+        }
+
+        .topic-title {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        /* Paper Structure Section */
+        .paper-structure {
+            background: #83792E;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .paper-structure::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="70" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="70" cy="80" r="2.5" fill="rgba(255,255,255,0.1)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .paper-structure .section-title {
+            color: white;
+            position: relative;
+            z-index: 1;
+        }
+
+        .structure-progress {
+            max-width: 800px;
+            margin: 3rem auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .progress-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+        }
+
+        .progress-step {
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .progress-step.green { background: #626C3B; }
+        .progress-step.brown { background: #83792E; }
+        .progress-step.orange { background: #E8AF3B; }
+        .progress-step.copper { background: #CC914D; }
+
+        .progress-step:hover {
+            transform: scaleY(1.5);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .structure-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .structure-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .structure-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .structure-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+        }
+
+        .structure-card:hover .structure-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .structure-icon.green { background: #626C3B; }
+        .structure-icon.brown { background: #83792E; }
+        .structure-icon.orange { background: #E8AF3B; color: #333; }
+        .structure-icon.copper { background: #CC914D; color: #333; }
+
+        .structure-content h3 {
+            margin-bottom: 0.5rem;
+            font-size: 1.3rem;
+        }
+
+        /* Niche Topics Section */
+        .niche-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e3f2fd 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .niche-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="15" cy="25" r="1.5" fill="rgba(98,108,59,0.1)"/><circle cx="85" cy="35" r="2" fill="rgba(131,121,46,0.1)"/><circle cx="45" cy="60" r="1" fill="rgba(232,175,59,0.1)"/><circle cx="75" cy="75" r="1.8" fill="rgba(204,145,77,0.1)"/></svg>');
+        }
+
+        .pyramid {
+            max-width: 900px;
+            margin: 3rem auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .niche-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .niche-card {
+            background: linear-gradient(135deg, #626C3B, #83792E);
+            padding: 2rem;
+            border-radius: 20px;
+            color: white;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .niche-card:nth-child(1) {
+            background: linear-gradient(135deg, #626C3B, #758442);
+        }
+
+        .niche-card:nth-child(2) {
+            background: linear-gradient(135deg, #83792E, #9A8E35);
+        }
+
+        .niche-card:nth-child(3) {
+            background: linear-gradient(135deg, #E8AF3B, #F0C152);
+        }
+
+        .niche-card:nth-child(4) {
+            background: linear-gradient(135deg, #CC914D, #D4A564);
+        }
+
+        .niche-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            backdrop-filter: blur(3px);
+            transition: all 0.3s ease;
+        }
+
+        .niche-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+        }
+
+        .niche-card:hover::before {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+        }
+
+        .niche-card-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .niche-card h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .niche-card p {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        .niche-icon-emoji {
+            font-size: 1.5rem;
+        }
+
+        .niche-description {
+            margin-top: 3rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .niche-highlight-box {
+            background: linear-gradient(135deg, white 0%, #f8fffe 100%);
+            padding: 3rem;
+            border-radius: 25px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(98, 108, 59, 0.1);
+        }
+
+        .niche-highlight-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #626C3B, #83792E, #E8AF3B, #CC914D);
+        }
+
+        .niche-highlight-box::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(98, 108, 59, 0.05) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .niche-icon {
+            position: absolute;
+            top: -20px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #626C3B, #83792E);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            box-shadow: 0 10px 25px rgba(98, 108, 59, 0.3);
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-8px); }
+            60% { transform: translateY(-4px); }
+        }
+
+        .niche-text {
+            position: relative;
+            z-index: 1;
+        }
+
+        .niche-text h3 {
+            color: #626C3B;
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+        }
+
+        .niche-text p {
+            color: #555;
+            line-height: 1.8;
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+
+        .highlight {
+            background: linear-gradient(120deg, #E8AF3B20 0%, #E8AF3B20 100%);
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #626C3B;
+        }
+
+        .niche-features {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(98, 108, 59, 0.05);
+            border-radius: 15px;
+            border-left: 4px solid #626C3B;
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover {
+            background: rgba(98, 108, 59, 0.1);
+            transform: translateX(5px);
+        }
+
+        .feature-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .feature-text {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        /* Output Section */
+        .output-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .output-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="10,30 20,10 30,30 20,50" fill="rgba(98,108,59,0.05)"/><polygon points="70,20 80,5 90,20 80,35" fill="rgba(131,121,46,0.05)"/><polygon points="15,80 25,65 35,80 25,95" fill="rgba(232,175,59,0.05)"/></svg>');
+        }
+
+        .output-showcase {
+            display: flex;
+            align-items: center;
+            gap: 3rem;
+            margin: 3rem 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .showcase-visual {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
+            position: relative;
+        }
+
+        .floating-elements {
+            position: relative;
+            width: 100%;
+            height: 300px;
+        }
+
+        .floating-card {
+            position: absolute;
+            width: 120px;
+            height: 80px;
+            background: linear-gradient(135deg, #626C3B, #83792E);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .floating-card:nth-child(1) {
+            top: 20px;
+            left: 20px;
+            animation-delay: 0s;
+        }
+
+        .floating-card:nth-child(2) {
+            top: 50px;
+            right: 30px;
+            animation-delay: 1s;
+            background: linear-gradient(135deg, #E8AF3B, #CC914D);
+        }
+
+        .floating-card:nth-child(3) {
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation-delay: 2s;
+            background: linear-gradient(135deg, #83792E, #626C3B);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(2deg); }
+        }
+
+        .output-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .output-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .output-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #626C3B, #E8AF3B, #CC914D);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .output-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .output-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .output-card-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #626C3B, #83792E);
+            color: white;
+            transition: transform 0.3s ease;
+        }
+
+        .output-card:hover .output-card-icon {
+            transform: scale(1.1) rotate(-5deg);
+        }
+
+        .output-card:nth-child(2) .output-card-icon {
+            background: linear-gradient(135deg, #83792E, #E8AF3B);
+        }
+
+        .output-card:nth-child(3) .output-card-icon {
+            background: linear-gradient(135deg, #E8AF3B, #CC914D);
+            color: #333;
+        }
+
+        .output-card h3 {
+            color: #626C3B;
+            margin-bottom: 1.5rem;
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .output-card p {
+            line-height: 1.7;
+            color: #666;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, #626C3B 0%, #2C3E50 100%);
+            color: white;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="30" fill="rgba(255,255,255,0.03)"/><circle cx="80" cy="80" r="25" fill="rgba(255,255,255,0.03)"/><circle cx="90" cy="30" r="20" fill="rgba(255,255,255,0.03)"/></svg>');
+        }
+
+        .cta-content {
+            position: relative;
+            z-index: 1;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .cta-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .cta-section p {
+            font-size: 1.2rem;
+            margin-bottom: 2.5rem;
+            opacity: 0.9;
+        }
+
+        .cta-buttons-large {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-large {
+            padding: 1.2rem 3rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            min-width: 200px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-large::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-large:hover::before {
+            left: 100%;
+        }
+
+        .btn-large.primary {
+            background: linear-gradient(135deg, #E8AF3B, #CC914D);
+            color: #333;
+        }
+
+        .btn-large.secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn-large:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-large.secondary:hover {
+            background: white;
+            color: #626C3B;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 280px;
+            }
+
+            .section {
+                padding: 60px 1rem;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .timeline-item {
+                flex-direction: column !important;
+                text-align: center !important;
+            }
+
+            .timeline-item:nth-child(even) {
+                flex-direction: column !important;
+                text-align: center !important;
+            }
+
+            .timeline-number {
+                margin: 0 0 1rem 0;
+            }
+
+            .niche-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .niche-card {
+                padding: 1.5rem;
+            }
+            
+            .niche-card h3 {
+                font-size: 1.1rem;
+            }
+            
+            .niche-card p {
+                font-size: 0.9rem;
+            }
+            
+            .niche-highlight-box {
+                padding: 2rem;
+                margin: 0 1rem;
+            }
+            
+            .niche-icon {
+                position: relative;
+                top: 0;
+                right: 0;
+                margin: 0 auto 1rem;
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+            
+            .niche-text h3 {
+                font-size: 1.4rem;
+                text-align: center;
+            }
+            
+            .niche-text p {
+                font-size: 1rem;
+            }
+            
+            .feature-item {
+                flex-direction: column;
+                text-align: center;
+                gap: 0.5rem;
+            }
+            
+            .service-steps {
+                grid-template-columns: 1fr;
+            }
+            
+            .database-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .topics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .structure-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .output-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero {
+                padding: 100px 1rem 60px;
+            }
+            
+            .nav {
+                padding: 0 1rem;
+            }
+            
+            .logo {
+                font-size: 1.2rem;
+            }
+            
+            .topics-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .topic-card {
+                margin: 0;
+            }
+        }
+
+        /* Smooth Scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Loading Animation */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">LittleScienceAI</div>
+            <div class="nav-links">
+                <a href="#hero">홈</a>
+                <a href="#service">서비스</a>
+                <a href="#database">데이터베이스</a>
+                <a href="#process">이용방법</a>
+                <a href="#topics">주제추천</a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="hero" class="hero">
+        <div class="hero-content">
+            <h1>과학소논문 주제선정서비스</h1>
+            <p>중고교학생들을 위한 맞춤형 연구주제 탐색 플랫폼! 데이터베이스를 활용한 지능형 AI가 여러분의 과학적 호기심을 실제 연구로 이어주는 길잡이가 되어드립니다.</p>
+            <div class="cta-buttons">
+                <a href="#" class="btn btn-primary">무료체험하기</a>
+                <a href="#" class="btn btn-secondary">이용권 구매하기</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Service Overview -->
+    <section id="service" class="section service-overview">
+        <div class="container">
+            <h2 class="section-title">서비스 개요</h2>
+            <div class="service-steps">
+                <div class="step-card fade-in">
+                    <div class="step-icon green">🔍</div>
+                    <h3 class="step-title">주제 탐색</h3>
+                    <p class="step-description">관심 분야를 입력하면 해당 주제에 대한 상세한 정의와 현재의 의미를 분석하여 제공합니다.</p>
+                </div>
+                <div class="step-card fade-in">
+                    <div class="step-icon brown">💡</div>
+                    <h3 class="step-title">문제 발견</h3>
+                    <p class="step-description">주제와 관련된 과학적, 사회적 문제점과 이슈사항을 정리하여 연구 가치가 있는 부분을 제시합니다.</p>
+                </div>
+                <div class="step-card fade-in">
+                    <div class="step-icon orange">📊</div>
+                    <h3 class="step-title">선행연구 분석</h3>
+                    <p class="step-description">내부 DB와 무료 API를 통해 유사한 연구 사례와 진행 상황을 파악하여 참고자료로 제공합니다.</p>
+                </div>
+                <div class="step-card fade-in">
+                    <div class="step-icon copper">📄</div>
+                    <h3 class="step-title">논문 구조화</h3>
+                    <p class="step-description">선택한 주제에 맞춰 서론, 실험방법, 본론, 결론을 포함한 논문 구조를 AI가 제안합니다.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Database Section -->
+    <section id="database" class="section database-section">
+        <div class="container">
+            <h2 class="section-title">차별화된 데이터베이스</h2>
+            <div class="database-grid">
+                <div class="database-card fade-in">
+                    <h3>💾 내부 DB</h3>
+                    <p>고등학생들이 참여한 다양한 과학 대회의 논문 제목과 초록 데이터를 보유하고 있습니다.</p>
+                    <ul>
+                        <li>전국 과학전람회 수상작</li>
+                        <li>청소년 과학탐구대회 참가작</li>
+                        <li>STEAM R&E 연구 프로젝트</li>
+                    </ul>
+                </div>
+                <div class="database-card fade-in">
+                    <h3>☁️ 외부 API 연결</h3>
+                    <p>국내외 학술 데이터베이스와 연결하여 최신 연구 동향을 파악할 수 있습니다.</p>
+                    <ul>
+                        <li>국내 학술지 논문 초록</li>
+                        <li>오픈 액세스 국제 저널</li>
+                        <li>대학 연구소 발표자료</li>
+                    </ul>
+                </div>
+                <div class="database-card fade-in">
+                    <h3>🤖 AI 추론 엔진</h3>
+                    <p>수집된 데이터를 분석하여 연구 가치가 있는 틈새 주제를 발굴합니다.</p>
+                    <ul>
+                        <li>주제 연관성 분석</li>
+                        <li>연구 트렌드 예측</li>
+                        <li>실험 가능성 평가</li>
+                    </ul>
+                </div>
+                <div class="database-card fade-in">
+                    <h3>🔄 정기 업데이트</h3>
+                    <p>최신 연구 동향을 반영하기 위해 데이터베이스를 주기적으로 업데이트합니다.</p>
+                    <ul>
+                        <li>분기별 DB 갱신</li>
+                        <li>새로운 API 소스 추가</li>
+                        <li>알고리즘 최적화</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process Timeline -->
+    <section id="process" class="section process-section">
+        <div class="container">
+            <h2 class="section-title">이용 프로세스</h2>
+            <div class="timeline">
+                <div class="timeline-item fade-in">
+                    <div class="timeline-number green">1</div>
+                    <div class="timeline-content">
+                        <h3>주제 입력</h3>
+                        <p>관심 있는 연구 분야나 키워드를 입력합니다. 예: '미세플라스틱', '재생에너지', '인공지능 윤리' 등</p>
+                    </div>
+                </div>
+                <div class="timeline-item fade-in">
+                    <div class="timeline-number brown">2</div>
+                    <div class="timeline-content">
+                        <h3>기초 정보 제공</h3>
+                        <p>입력된 주제에 대한 정의, 현재 의미, 과학적·사회적 이슈를 정리하여 제공합니다.</p>
+                    </div>
+                </div>
+                <div class="timeline-item fade-in">
+                    <div class="timeline-number orange">3</div>
+                    <div class="timeline-content">
+                        <h3>유사 연구 탐색</h3>
+                        <p>내부 DB와 연결된 API를 통해 유사한 연구 사례를 찾아 제시합니다. 각 사례의 출처와 참고 정보도 함께 제공됩니다.</p>
+                    </div>
+                </div>
+                <div class="timeline-item fade-in">
+                    <div class="timeline-number copper">4</div>
+                    <div class="timeline-content">
+                        <h3>논문 구조화</h3>
+                        <p>선택한 연구 주제에 맞춰 서론, 실험방법, 내용, 결론 등을 포함한 논문 구조를 AI가 제안합니다.</p>
+                    </div>
+                </div>
+                <div class="timeline-item fade-in">
+                    <div class="timeline-number red">5</div>
+                    <div class="timeline-content">
+                        <h3>틈새 주제 제안</h3>
+                        <p>연구 과정에서 발견된 추가 연구 가능성이 있는 틈새 주제를 제안합니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Topics Section -->
+    <section id="topics" class="section topics-section">
+        <div class="container">
+            <h2 class="section-title">맞춤형 주제 추천</h2>
+            <div class="topics-grid">
+                <div class="topic-card fade-in">
+                    <div class="topic-image">🌱</div>
+                    <div class="topic-content">
+                        <h3 class="topic-title">환경과학</h3>
+                        <p>지역 생태계 모니터링, 미세플라스틱 영향 분석, 도시 열섬 현상 연구 등 현재 환경 문제에 초점을 맞춘 주제를 제안합니다. 학교 주변 환경에서도 실험 가능한 현실적인 연구 방법을 함께 제시합니다.</p>
+                    </div>
+                </div>
+                <div class="topic-card fade-in">
+                    <div class="topic-image">💻</div>
+                    <div class="topic-content">
+                        <h3 class="topic-title">정보과학</h3>
+                        <p>인공지능 윤리, 알고리즘 개선, 데이터 분석 등 정보기술 분야의 주제를 다룹니다. 고등학생 수준에서 접근 가능한 오픈소스 도구와 데이터셋을 활용한 연구 방법을 안내합니다.</p>
+                    </div>
+                </div>
+                <div class="topic-card fade-in">
+                    <div class="topic-image">🧬</div>
+                    <div class="topic-content">
+                        <h3 class="topic-title">생명과학</h3>
+                        <p>식물 성장 촉진 요인, 미생물 활용 연구, 간단한 유전학 실험 등 생명과학 분야의 주제를 제안합니다. 학교 실험실에서 구현 가능한 안전한 실험 프로토콜을 중심으로 구성됩니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Paper Structure Section -->
+    <section class="section paper-structure">
+        <div class="container">
+            <h2 class="section-title">논문 구조화 지원</h2>
+            
+            <div class="structure-progress fade-in">
+                <div class="progress-bar">
+                    <div class="progress-step green"></div>
+                    <div class="progress-step brown"></div>
+                    <div class="progress-step orange"></div>
+                    <div class="progress-step copper"></div>
+                </div>
+            </div>
+
+            <div class="structure-grid">
+                <div class="structure-card fade-in">
+                    <div class="structure-icon green">💬</div>
+                    <div class="structure-content">
+                        <h3>서론 작성 가이드</h3>
+                        <p>연구 배경, 목적, 중요성을 명확하게 설명하는 방법 제시</p>
+                    </div>
+                </div>
+                <div class="structure-card fade-in">
+                    <div class="structure-icon brown">⚗️</div>
+                    <div class="structure-content">
+                        <h3>실험 설계 방법론</h3>
+                        <p>변인 통제, 실험 과정, 데이터 수집 계획 수립 안내</p>
+                    </div>
+                </div>
+                <div class="structure-card fade-in">
+                    <div class="structure-icon orange">📈</div>
+                    <div class="structure-content">
+                        <h3>결과 분석 프레임워크</h3>
+                        <p>데이터 시각화, 통계 분석, 결과 해석 방법 제안</p>
+                    </div>
+                </div>
+                <div class="structure-card fade-in">
+                    <div class="structure-icon copper">📝</div>
+                    <div class="structure-content">
+                        <h3>결론 도출 전략</h3>
+                        <p>연구 의의, 한계점, 후속 연구 제안 방법 안내</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="fade-in" style="margin-top: 3rem; text-align: center; background: rgba(255, 255, 255, 0.1); padding: 2rem; border-radius: 15px; position: relative; z-index: 1;">
+                <p>LittleScienceAI는 논문의 각 섹션을 체계적으로 작성할 수 있도록 단계별 안내를 제공합니다. 서론부터 결론까지 학술적인 글쓰기 방법과 함께 실제 연구 사례를 참고하여 구체적인 예시를 보여줍니다.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Niche Topics Section -->
+    <section class="section niche-section">
+        <div class="container">
+            <h2 class="section-title">틈새 주제 발굴</h2>
+            <div class="pyramid fade-in">
+                <div class="niche-grid">
+                    <div class="niche-card">
+                        <div class="niche-card-content">
+                            <h3><span class="niche-icon-emoji">🎯</span>미개척 연구 영역</h3>
+                            <p>선행 연구가 부족한 새로운 분야</p>
+                        </div>
+                    </div>
+                    <div class="niche-card">
+                        <div class="niche-card-content">
+                            <h3><span class="niche-icon-emoji">🔗</span>융합 연구 주제</h3>
+                            <p>서로 다른 학문 분야의 접점에 있는 주제</p>
+                        </div>
+                    </div>
+                    <div class="niche-card">
+                        <div class="niche-card-content">
+                            <h3><span class="niche-icon-emoji">🏘️</span>지역 기반 연구</h3>
+                            <p>지역 특성을 활용한 현장 중심 연구</p>
+                        </div>
+                    </div>
+                    <div class="niche-card">
+                        <div class="niche-card-content">
+                            <h3><span class="niche-icon-emoji">📈</span>트렌드 연계 주제</h3>
+                            <p>현재 사회적 이슈와 연결된 과학 연구</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="fade-in niche-description">
+                <div class="niche-highlight-box">
+                    <div class="niche-icon">🎯</div>
+                    <div class="niche-text">
+                        <h3>🔍 창의적 주제 발굴의 핵심</h3>
+                        <p><strong>LittleScienceAI</strong>는 기존 연구의 분석 과정에서 발견된 <span class="highlight">틈새 주제들</span>을 제안합니다. 이미 많이 연구된 주제보다는 창의적이고 독창적인 연구가 가능한 영역을 발굴하여 제시합니다.</p>
+                        
+                        <div class="niche-features">
+                            <div class="feature-item">
+                                <span class="feature-icon">👥</span>
+                                <span class="feature-text"><strong>고등학생 관점</strong>에서 새로운 시각을 제공할 수 있는 주제</span>
+                            </div>
+                            <div class="feature-item">
+                                <span class="feature-icon">🏘️</span>
+                                <span class="feature-text"><strong>지역사회 연계</strong>하여 실질적인 데이터 수집이 가능한 주제</span>
+                            </div>
+                            <div class="feature-item">
+                                <span class="feature-icon">🔗</span>
+                                <span class="feature-text"><strong>융합적 접근</strong>이 가능한 다학문 통합 주제</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Output Section -->
+    <section class="section output-section">
+        <div class="container">
+            <h2 class="section-title">출력 및 활용</h2>
+            
+            <div class="output-showcase fade-in">
+                <div class="showcase-visual">
+                    <div class="floating-elements">
+                        <div class="floating-card">📄</div>
+                        <div class="floating-card">📚</div>
+                        <div class="floating-card">🗂️</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="output-grid">
+                <div class="output-card fade-in">
+                    <div class="output-card-icon">📄</div>
+                    <h3>맞춤형 PDF 생성</h3>
+                    <p>연구 주제 분석, 선행 연구 조사, 연구 방법론 등을 포함한 맞춤형 PDF 문서를 다운로드 수 있습니다. 이 문서는 연구 계획서 작성의 기초 자료로 활용할 수 있습니다.</p>
+                </div>
+                <div class="output-card fade-in">
+                    <div class="output-card-icon">📚</div>
+                    <h3>참고문헌 정리</h3>
+                    <p>분석에 활용된 모든 자료의 출처를 학술적 형식에 맞춰 정리하여 제공합니다. 이를 통해 연구의 신뢰성을 높이고 추가 자료 탐색에 도움을 줍니다.</p>
+                </div>
+                <div class="output-card fade-in">
+                    <div class="output-card-icon">🗂️</div>
+                    <h3>연구 로드맵 제안</h3>
+                    <p>선택한 주제에 대한 연구를 진행하기 위한 단계별 로드맵을 제시합니다. 연구 기간, 필요 자원, 중간 점검 사항 등을 포함한 실질적인 계획을 수립할 수 있습니다.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="section cta-section">
+        <div class="container">
+            <div class="cta-content fade-in">
+                <h2>지금 시작해보세요!</h2>
+                <p>AI가 제안하는 맞춤형 과학 연구 주제로<br>여러분만의 특별한 연구를 시작해보세요.</p>
+                <div class="cta-buttons-large">
+                    <a href="#" class="btn-large primary">무료체험 시작하기</a>
+                    <a href="#" class="btn-large secondary">더 알아보기</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Intersection Observer for fade-in animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        // Observe all fade-in elements
+        document.querySelectorAll('.fade-in').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    const headerHeight = document.querySelector('.header').offsetHeight;
+                    const targetPosition = target.offsetTop - headerHeight;
+                    
+                    window.scrollTo({
+                        top: targetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Header background on scroll
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('.header');
+            if (window.scrollY > 100) {
+                header.style.background = 'rgba(255, 255, 255, 0.98)';
+            } else {
+                header.style.background = 'rgba(255, 255, 255, 0.95)';
+            }
+        });
+    </script>
+</body>
+</html>
