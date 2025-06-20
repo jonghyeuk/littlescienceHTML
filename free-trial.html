@@ -440,8 +440,8 @@
         
         <div class="bottom-links">
             <p>더 오래 사용하고 싶다면?</p>
-            <a href="#" class="link-btn">💳 유료 이용권 구매</a>
-            <a href="#" class="link-btn">🏠 메인 페이지로</a>
+            <a href="purchase.html" class="link-btn">💳 유료 이용권 구매</a>
+            <a href="index.html" class="link-btn">🏠 메인 페이지로</a>
         </div>
     </div>
 
@@ -544,8 +544,8 @@
                     const userIP = await getUserIP();
                     const deviceFingerprint = generateDeviceFingerprint();
                     
-                    // Google Apps Script URL (실제 배포 URL로 변경해야 함)
-                    const scriptUrl = 'YOUR_GOOGLE_SCRIPT_URL_HERE';
+                    // Google Apps Script URL
+                    const scriptUrl = 'https://script.google.com/macros/s/AKfycbzJn7ku_zQvtb-GP0Z_-QA1O1VWugYjc1_FIldnRbjwj1J6leheeRGqJgIt9nnokkXR0Q/exec';
                     
                     const response = await fetch(scriptUrl, {
                         method: 'POST',
@@ -629,7 +629,5 @@
             }
         });
     </script>
-</body>
-</html>
 </body>
 </html>
