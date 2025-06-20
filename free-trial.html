@@ -585,13 +585,10 @@
                     console.log('🚀 무료체험 요청 시작:', email);
                     
                     // IP 주소와 기기 핑거프린트 가져오기
-                    console.log('📡 IP 주소 가져오는 중...');
                     const userIP = await getUserIP();
-                    console.log('✅ IP 주소:', userIP);
-                    
-                    console.log('🔍 기기 핑거프린트 생성 중...');
                     const deviceFingerprint = generateDeviceFingerprint();
-                    console.log('✅ 기기 핑거프린트:', deviceFingerprint);
+                    
+                    console.log('📤 백그라운드에서 요청 전송 중...');
                     
                     // Google Apps Script URL
                     const scriptUrl = 'https://script.google.com/macros/s/AKfycbzJn7ku_zQvtb-GP0Z_-QA1O1VWugYjc1_FIldnRbjwj1J6leheeRGqJgIt9nnokkXR0Q/exec';
@@ -603,14 +600,16 @@
                         deviceFingerprint: deviceFingerprint
                     };
                     
-                    console.log('📤 서버로 전송하는 데이터:', requestData);
-                    console.log('🌐 CORS 우회 방식으로 요청');
+                    // 🔥 CORS 우회: 숨겨진 iframe으로 백그라운드 전송
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.name = 'hiddenFrame';
+                    document.body.appendChild(iframe);
                     
-                    // 🔥 CORS 우회: 동적 form 생성 방식
                     const form = document.createElement('form');
                     form.method = 'POST';
                     form.action = scriptUrl;
-                    form.target = '_blank'; // 새 창에서 열기
+                    form.target = 'hiddenFrame'; // 숨겨진 iframe으로 전송
                     form.style.display = 'none';
                     
                     // 데이터 추가
@@ -624,14 +623,21 @@
                     
                     document.body.appendChild(form);
                     form.submit();
-                    document.body.removeChild(form);
                     
-                    console.log('✅ 폼 제출 완료 - 새 창에서 결과 확인');
+                    // 폼과 iframe 정리
+                    setTimeout(() => {
+                        document.body.removeChild(form);
+                        if (iframe.parentNode) {
+                            document.body.removeChild(iframe);
+                        }
+                    }, 1000);
                     
-                    // 성공으로 처리 (실제 결과는 새 창에서 확인)
+                    console.log('✅ 백그라운드 전송 완료');
+                    
+                    // 바로 성공으로 처리 (사용자에게 간단하게)
                     resolve({
                         success: true,
-                        message: '요청이 전송되었습니다. 새 창에서 결과를 확인하세요.',
+                        message: '전송 완료',
                         email: email
                     });
                     
