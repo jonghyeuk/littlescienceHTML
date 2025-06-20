@@ -422,19 +422,19 @@
             </div>
         </div>
 
-        <div class="form-section">
+        <form class="form-section" onsubmit="handleFormSubmit(event)">
             <div class="input-container">
-                <input type="email" id="userEmail" placeholder="📧 이메일 주소를 입력하세요" required>
+                <input type="email" id="userEmail" placeholder="📧 이메일 주소 입력 후 엔터키 또는 버튼 클릭" required>
             </div>
             
             <div class="notice">
-                ⚡ 체험용 액세스 코드가 즉시 발송됩니다
+                ⚡ 체험용 액세스 코드가 즉시 발송됩니다 (이메일 입력 후 엔터키 또는 버튼 클릭)
             </div>
             
-            <button type="button" class="trial-btn" id="startTrialBtn" onclick="startFreeTrial()">
+            <button type="submit" class="trial-btn" id="startTrialBtn">
                 🚀 20분 무료 체험 시작하기
             </button>
-        </div>
+        </form>
         
         <div class="result" id="resultMessage"></div>
         
@@ -446,6 +446,12 @@
     </div>
 
     <script>
+        // 폼 제출 처리 (엔터키 포함)
+        function handleFormSubmit(event) {
+            event.preventDefault(); // 페이지 새로고침 방지
+            startFreeTrial();
+        }
+
         function startFreeTrial() {
             const email = document.getElementById('userEmail').value;
             const btn = document.getElementById('startTrialBtn');
@@ -495,8 +501,14 @@
                     }, 3000);
                 })
                 .catch(error => {
-                    // 에러 처리
-                    showError('전송 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+                    // 에러 처리 - 구체적인 에러 메시지 표시
+                    let errorMessage = '전송 중 오류가 발생했습니다.';
+                    
+                    if (error.message) {
+                        errorMessage = error.message;
+                    }
+                    
+                    showError(errorMessage);
                     resetButton();
                 });
         }
@@ -565,12 +577,19 @@
                     if (data.success) {
                         resolve(data);
                     } else {
-                        reject(new Error(data.message));
+                        // 서버에서 온 구체적인 에러 메시지 사용
+                        reject(new Error(data.message || '서버 오류가 발생했습니다.'));
                     }
                     
                 } catch (error) {
                     console.error('Error in processFreeTrial:', error);
-                    reject(error);
+                    
+                    // 네트워크 에러인지 확인
+                    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                        reject(new Error('네트워크 연결을 확인해주세요.'));
+                    } else {
+                        reject(error);
+                    }
                 }
             });
         }
@@ -608,24 +627,20 @@
             btn.innerHTML = '🚀 20분 무료 체험 시작하기';
         }
         
-        // 엔터키 지원
-        document.getElementById('userEmail').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                startFreeTrial();
-            }
-        });
-        
-        // 이메일 입력 시 실시간 유효성 검사
+        // 이메일 입력 시 실시간 유효성 검사 및 엔터키 안내
         document.getElementById('userEmail').addEventListener('input', function(e) {
             const email = e.target.value;
             const btn = document.getElementById('startTrialBtn');
             
             if (email && isValidEmail(email)) {
                 btn.style.opacity = '1';
+                btn.innerHTML = '🚀 20분 무료 체험 시작하기 (또는 엔터키)';
             } else if (email) {
                 btn.style.opacity = '0.7';
+                btn.innerHTML = '🚀 20분 무료 체험 시작하기';
             } else {
                 btn.style.opacity = '1';
+                btn.innerHTML = '🚀 20분 무료 체험 시작하기';
             }
         });
     </script>
