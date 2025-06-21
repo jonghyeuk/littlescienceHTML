@@ -593,21 +593,17 @@
             // Google Apps Script URL
             const scriptUrl = 'https://script.google.com/macros/s/AKfycbzJn7ku_zQvtb-GP0Z_-QA1O1VWugYjc1_FIldnRbjwj1J6leheeRGqJgIt9nnokkXR0Q/exec';
             
-            // JSON으로 전송 (FormData 대신)
-            const requestData = {
-                action: 'free_trial',
-                userEmail: email,
-                userIP: userIP,
-                deviceFingerprint: deviceFingerprint
-            };
+            // FormData로 전송 (CORS 문제 해결)
+            const formData = new FormData();
+            formData.append('action', 'free_trial');
+            formData.append('userEmail', email);
+            formData.append('userIP', userIP);
+            formData.append('deviceFingerprint', deviceFingerprint);
             
             // fetch()로 요청 전송
             const response = await fetch(scriptUrl, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestData)
+                body: formData
             });
             
             console.log('✅ fetch() 전송 완료');
