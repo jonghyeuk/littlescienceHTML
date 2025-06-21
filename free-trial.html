@@ -588,22 +588,26 @@
             const userIP = await getUserIP();
             const deviceFingerprint = generateDeviceFingerprint();
             
-            console.log('📤 fetch()로 요청 전송 중...');
+            console.log('📤 JSON으로 요청 전송 중...');
             
             // Google Apps Script URL
             const scriptUrl = 'https://script.google.com/macros/s/AKfycbzJn7ku_zQvtb-GP0Z_-QA1O1VWugYjc1_FIldnRbjwj1J6leheeRGqJgIt9nnokkXR0Q/exec';
             
-            // FormData로 전송 (Apps Script에서 더 안정적으로 받음)
-            const formData = new FormData();
-            formData.append('action', 'free_trial');
-            formData.append('userEmail', email);
-            formData.append('userIP', userIP);
-            formData.append('deviceFingerprint', deviceFingerprint);
+            // JSON으로 전송 (FormData 대신)
+            const requestData = {
+                action: 'free_trial',
+                userEmail: email,
+                userIP: userIP,
+                deviceFingerprint: deviceFingerprint
+            };
             
             // fetch()로 요청 전송
             const response = await fetch(scriptUrl, {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestData)
             });
             
             console.log('✅ fetch() 전송 완료');
@@ -708,3 +712,4 @@
     </script>
 </body>
 </html>
+
