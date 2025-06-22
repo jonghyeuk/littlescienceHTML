@@ -425,61 +425,12 @@
     </div>
 
     <script>
-        // 테스트 모드 (개발용)
-        const TEST_MODE = false; // true로 바꾸면 테스트 모드
-        
-        // 폼 제출 처리 (엔터키 포함)
+        // 🔥 구매 시스템과 100% 동일한 방식으로 CORS 완전 우회
         function handleFormSubmit(event) {
-            event.preventDefault(); // 페이지 새로고침 방지
-            console.log('📝 폼 제출됨');
+            event.preventDefault();
             
-            if (TEST_MODE) {
-                console.log('🧪 테스트 모드 실행');
-                testMode();
-            } else {
-                console.log('🚀 실제 모드 실행');
-                startFreeTrial();
-            }
-        }
-        
-        // 테스트 모드 (Google Apps Script 없이 테스트)
-        function testMode() {
             const email = document.getElementById('userEmail').value;
-            const btn = document.getElementById('sendBtn');
             
-            console.log('🧪 테스트 모드로 실행:', email);
-            
-            if (!email || !isValidEmail(email)) {
-                showError('올바른 이메일을 입력해주세요.');
-                return;
-            }
-            
-            // 버튼 상태 변경
-            btn.disabled = true;
-            btn.className = 'send-btn loading';
-            btn.innerHTML = '⏳';
-            
-            // 2초 후 성공 시뮬레이션
-            setTimeout(() => {
-                btn.className = 'send-btn success';
-                btn.innerHTML = '✅';
-                
-                showSuccess(`
-                    <h4>🧪 테스트 모드 성공!</h4>
-                    <p>실제 환경에서는 <strong>${email}</strong>로 코드가 발송됩니다.</p>
-                    <p><strong>TEST_MODE = false</strong>로 바꿔서 실제 테스트하세요.</p>
-                `);
-                
-                setTimeout(() => resetButton(), 3000);
-            }, 2000);
-        }
-
-        function startFreeTrial() {
-            const email = document.getElementById('userEmail').value;
-            const btn = document.getElementById('sendBtn');
-            const resultDiv = document.getElementById('resultMessage');
-            
-            // 이메일 유효성 검사
             if (!email) {
                 showError('이메일 주소를 입력해주세요.');
                 return;
@@ -491,166 +442,92 @@
             }
             
             // 로딩 상태 시작
+            const btn = document.getElementById('sendBtn');
             btn.disabled = true;
             btn.className = 'send-btn loading';
             btn.innerHTML = '⏳';
-            resultDiv.style.display = 'none';
+            document.getElementById('resultMessage').style.display = 'none';
             
-            // 무료 체험 요청 처리
-            processFreeTrial(email)
-                .then(response => {
-                    // 성공 처리
-                    btn.className = 'send-btn success';
-                    btn.innerHTML = '✅';
-                    
-                    showSuccess(`
-                        <h4>🎉 무료 체험 요청이 전송되었습니다!</h4>
-                        <p><strong>${email}</strong>으로 액세스 코드가 발송됩니다.</p>
-                        <p>📧 몇 분 내로 이메일을 확인해주세요!</p>
-                        <br>
-                        <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 10px; margin-top: 15px;">
-                            <strong>📌 다음 단계:</strong><br>
-                            1️⃣ 이메일 확인 (2-3분 소요)<br>
-                            2️⃣ 액세스 코드 복사<br>
-                            3️⃣ 메인 사이트에서 코드 입력<br>
-                            4️⃣ 20분 무료 체험 시작!
-                        </div>
-                        <div style="background: rgba(255,235,59,0.2); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 14px;">
-                            💡 요청이 성공적으로 전송되었습니다.
-                        </div>
-                    `);
-                    
-                    // 3초 후 버튼 리셋
-                    setTimeout(() => {
-                        resetButton();
-                    }, 3000);
-                })
-                .catch(error => {
-                    // 에러 처리 - 구체적인 에러 메시지 표시
-                    let errorMessage = '전송 중 오류가 발생했습니다.';
-                    
-                    if (error.message) {
-                        errorMessage = error.message;
-                    }
-                    
-                    showError(errorMessage);
-                    resetButton();
-                });
+            try {
+                // 🔥 구매 시스템과 100% 동일한 동적 form 생성 방식
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'https://script.google.com/macros/s/AKfycbzDeQ_iHFhdltpS68thRT7Zv31yjDC6znP9SLA14jhtWLmY20kucoPWlUkmQWaztFoH/exec';
+                form.target = '_blank';
+                
+                // 데이터 추가
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'free_trial';
+                form.appendChild(actionInput);
+                
+                const emailInput = document.createElement('input');
+                emailInput.type = 'hidden';
+                emailInput.name = 'userEmail';
+                emailInput.value = email;
+                form.appendChild(emailInput);
+                
+                // IP와 핑거프린트 추가 (옵셔널)
+                const ipInput = document.createElement('input');
+                ipInput.type = 'hidden';
+                ipInput.name = 'userIP';
+                ipInput.value = 'browser';
+                form.appendChild(ipInput);
+                
+                const fingerprintInput = document.createElement('input');
+                fingerprintInput.type = 'hidden';
+                fingerprintInput.name = 'deviceFingerprint';
+                fingerprintInput.value = generateDeviceFingerprint();
+                form.appendChild(fingerprintInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+                
+                // 성공 메시지 표시
+                btn.className = 'send-btn success';
+                btn.innerHTML = '✅';
+                
+                showSuccess(`
+                    <h4>🎉 무료 체험 요청이 전송되었습니다!</h4>
+                    <p><strong>${email}</strong>으로 액세스 코드가 발송됩니다.</p>
+                    <p>📧 새 창이 열리면서 처리 결과를 확인할 수 있습니다.</p>
+                    <br>
+                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 10px; margin-top: 15px;">
+                        <strong>📌 다음 단계:</strong><br>
+                        1️⃣ 새 창에서 결과 확인<br>
+                        2️⃣ 이메일에서 액세스 코드 복사<br>
+                        3️⃣ 메인 사이트에서 코드 입력<br>
+                        4️⃣ 20분 무료 체험 시작!
+                    </div>
+                `);
+                
+            } catch (error) {
+                showError('요청 처리 중 오류가 발생했습니다.');
+                console.error('Form 생성 오류:', error);
+            }
+            
+            // 3초 후 버튼 리셋
+            setTimeout(() => {
+                resetButton();
+            }, 3000);
         }
         
-        // IP 주소 가져오기
-        async function getUserIP() {
-            try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                return data.ip;
-            } catch (error) {
-                console.error('Error getting IP:', error);
-                return 'unknown';
-            }
-        }
-
-        // 브라우저 핑거프린팅 생성
+        // 브라우저 핑거프린팅 생성 (간단한 버전)
         function generateDeviceFingerprint() {
             try {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                ctx.textBaseline = 'top';
-                ctx.font = '14px Arial';
-                ctx.fillText('LittleScienceAI', 2, 2);
-                
                 const fingerprint = [
-                    navigator.userAgent,
+                    navigator.userAgent.slice(0, 50),
                     navigator.language,
                     screen.width + 'x' + screen.height,
-                    new Date().getTimezoneOffset(),
-                    canvas.toDataURL()
+                    new Date().getTimezoneOffset()
                 ].join('|');
                 
                 return btoa(fingerprint).slice(0, 20);
             } catch (error) {
-                console.error('Error generating fingerprint:', error);
                 return 'unknown';
             }
-        }
-
-        function processFreeTrial(email) {
-            return new Promise(async (resolve, reject) => {
-                try {
-                    console.log('🚀 무료체험 요청 시작:', email);
-                    
-                    // IP 주소와 기기 핑거프린트 가져오기
-                    const userIP = await getUserIP();
-                    const deviceFingerprint = generateDeviceFingerprint();
-                    
-                    console.log('📤 FormData로 요청 전송 중...');
-                    
-                    // Google Apps Script URL (새로운 URL)
-                    const scriptUrl = 'https://script.google.com/macros/s/AKfycbzDeQ_iHFhdltpS68thRT7Zv31yjDC6znP9SLA14jhtWLmY20kucoPWlUkmQWaztFoH/exec';
-                    
-                    // FormData로 전송 (CORS 문제 해결)
-                    const formData = new FormData();
-                    formData.append('action', 'free_trial');
-                    formData.append('userEmail', email);
-                    formData.append('userIP', userIP);
-                    formData.append('deviceFingerprint', deviceFingerprint);
-                    
-                    console.log('📋 전송 데이터:', {
-                        action: 'free_trial',
-                        userEmail: email,
-                        userIP: userIP,
-                        deviceFingerprint: deviceFingerprint
-                    });
-                    
-                    // fetch()로 요청 전송
-                    const response = await fetch(scriptUrl, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    console.log('✅ fetch() 전송 완료');
-                    console.log('📄 응답 상태:', response.status);
-                    console.log('📄 응답 헤더:', response.headers);
-                    
-                    // 🔥 실제 응답 내용 확인
-                    const responseText = await response.text();
-                    console.log('📋 응답 내용 길이:', responseText.length);
-                    console.log('📋 응답 내용 일부:', responseText.substring(0, 200));
-                    
-                    // 🔥 응답이 성공 페이지인지 확인
-                    if (response.ok && responseText.includes('무료체험 신청 완료')) {
-                        console.log('✅ 실제 성공 확인됨');
-                        resolve({
-                            success: true,
-                            message: '전송 완료',
-                            email: email
-                        });
-                    } 
-                    // 🔥 실패 페이지인지 확인
-                    else if (response.ok && responseText.includes('무료체험 신청 실패')) {
-                        console.log('❌ 실제 실패 확인됨');
-                        // HTML에서 에러 메시지 추출
-                        const errorMatch = responseText.match(/<div class="message">(.*?)<\/div>/);
-                        const errorMessage = errorMatch ? errorMatch[1] : '무료체험 신청에 실패했습니다.';
-                        throw new Error(errorMessage);
-                    }
-                    // 🔥 에러 페이지인지 확인
-                    else if (response.ok && responseText.includes('서버 오류')) {
-                        console.log('⚠️ 서버 오류 확인됨');
-                        throw new Error('서버 오류가 발생했습니다.');
-                    }
-                    // 🔥 알 수 없는 응답
-                    else {
-                        console.log('❓ 알 수 없는 응답');
-                        console.log('전체 응답:', responseText);
-                        throw new Error(`예상하지 못한 응답: ${response.status}`);
-                    }
-                    
-                } catch (error) {
-                    console.error('💥 processFreeTrial 에러:', error);
-                    reject(error);
-                }
-            });
         }
         
         function isValidEmail(email) {
@@ -663,28 +540,14 @@
             resultDiv.className = 'result success';
             resultDiv.innerHTML = message;
             resultDiv.style.display = 'block';
-            
-            // 부드럽게 스크롤
             resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
         
         function showError(message) {
             const resultDiv = document.getElementById('resultMessage');
             resultDiv.className = 'result error';
-            resultDiv.innerHTML = `
-                <h4>❌ 오류</h4>
-                <p>${message}</p>
-                <details style="margin-top: 10px;">
-                    <summary style="cursor: pointer; color: #666;">🔧 개발자 정보 (클릭해서 확인)</summary>
-                    <p style="font-size: 12px; color: #888; margin-top: 10px;">
-                        브라우저 개발자 도구(F12)의 Console 탭을 확인하면 더 자세한 에러 정보를 볼 수 있습니다.
-                    </p>
-                </details>
-            `;
+            resultDiv.innerHTML = `<h4>❌ 오류</h4><p>${message}</p>`;
             resultDiv.style.display = 'block';
-            
-            // 에러도 콘솔에 출력
-            console.error('💥 사용자에게 표시된 에러:', message);
         }
         
         function resetButton() {
