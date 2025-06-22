@@ -306,6 +306,89 @@
             transform: translateY(-2px);
         }
 
+        /* 모달 스타일 추가 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 15% auto;
+            padding: 40px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-content h2 {
+            color: #2E7D32;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .modal-content .code {
+            font-size: 28px;
+            color: #4CAF50;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px;
+            background: #E8F5E8;
+            border-radius: 10px;
+        }
+
+        .modal-content p {
+            color: #666;
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+
+        .modal-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .modal-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .modal-error h2 {
+            color: #721c24;
+        }
+
         /* 모바일 반응형 */
         @media (max-width: 768px) {
             .container {
@@ -424,8 +507,18 @@
         </div>
     </div>
 
+    <!-- 🔥 모달 추가 -->
+    <div id="resultModal" class="modal">
+        <div class="modal-content">
+            <div id="modalBody">
+                <!-- 동적으로 내용이 들어감 -->
+            </div>
+            <button class="modal-btn" onclick="closeModal()">확인</button>
+        </div>
+    </div>
+
     <script>
-        // 🔥 구매 시스템과 100% 동일한 방식으로 CORS 완전 우회
+        // 🔥 모달 방식으로 변경 (팝업 대신)
         function handleFormSubmit(event) {
             event.preventDefault();
             
@@ -449,10 +542,16 @@
             document.getElementById('resultMessage').style.display = 'none';
             
             try {
-                // 🔥 팝업 창으로 변경 (새창 대신)
+                // 🔥 iframe을 사용해서 요청 처리
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.name = 'hiddenFrame';
+                document.body.appendChild(iframe);
+                
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = 'https://script.google.com/macros/s/AKfycbzDeQ_iHFhdltpS68thRT7Zv31yjDC6znP9SLA14jhtWLmY20kucoPWlUkmQWaztFoH/exec';
+                form.target = 'hiddenFrame';
                 
                 // 데이터 추가
                 const actionInput = document.createElement('input');
@@ -467,7 +566,6 @@
                 emailInput.value = email;
                 form.appendChild(emailInput);
                 
-                // IP와 핑거프린트 추가 (옵셔널)
                 const ipInput = document.createElement('input');
                 ipInput.type = 'hidden';
                 ipInput.name = 'userIP';
@@ -480,42 +578,21 @@
                 fingerprintInput.value = generateDeviceFingerprint();
                 form.appendChild(fingerprintInput);
                 
-                // 🔥 팝업 창 열기 (크기 조정)
-                const popup = window.open('', 'freeTrialResult', 
-                    'width=500,height=600,scrollbars=yes,resizable=yes,menubar=no,toolbar=no,status=no,location=no');
+                document.body.appendChild(form);
+                form.submit();
                 
-                if (popup) {
-                    form.target = 'freeTrialResult';
-                    document.body.appendChild(form);
-                    form.submit();
+                // 폼과 iframe 정리
+                setTimeout(() => {
                     document.body.removeChild(form);
-                    
-                    // 팝업에 포커스
-                    popup.focus();
-                } else {
-                    // 팝업이 차단된 경우
-                    showError('팝업이 차단되었습니다. 브라우저에서 팝업을 허용해주세요.');
-                    resetButton();
-                    return;
-                }
+                    document.body.removeChild(iframe);
+                }, 1000);
                 
                 // 성공 메시지 표시
                 btn.className = 'send-btn success';
                 btn.innerHTML = '✅';
                 
-                showSuccess(`
-                    <h4>🎉 무료 체험 요청이 전송되었습니다!</h4>
-                    <p><strong>${email}</strong>으로 액세스 코드가 발송됩니다.</p>
-                    <p>📧 팝업 창에서 처리 결과를 확인할 수 있습니다.</p>
-                    <br>
-                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 10px; margin-top: 15px;">
-                        <strong>📌 다음 단계:</strong><br>
-                        1️⃣ 팝업에서 결과 확인<br>
-                        2️⃣ 이메일에서 액세스 코드 복사<br>
-                        3️⃣ 메인 사이트에서 코드 입력<br>
-                        4️⃣ 20분 무료 체험 시작!
-                    </div>
-                `);
+                // 🔥 모달로 결과 표시
+                showSuccessModal(email);
                 
             } catch (error) {
                 showError('요청 처리 중 오류가 발생했습니다.');
@@ -527,6 +604,59 @@
                 resetButton();
             }, 3000);
         }
+        
+        // 🔥 성공 모달 표시
+        function showSuccessModal(email) {
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <h2>🎉 무료체험 신청 완료!</h2>
+                <div class="code">코드가 발송되었습니다!</div>
+                <p><strong>${email}</strong>으로<br>20분 체험 코드가 발송되었습니다.</p>
+                <div style="background: #F1F8E9; border: 2px solid #4CAF50; border-radius: 10px; padding: 15px; margin: 20px 0; font-size: 14px; text-align: left;">
+                    <strong>📌 다음 단계:</strong><br>
+                    <div style="margin: 8px 0; padding-left: 20px;">1️⃣ 이메일 확인 (2-3분 소요)</div>
+                    <div style="margin: 8px 0; padding-left: 20px;">2️⃣ 체험 코드 복사</div>
+                    <div style="margin: 8px 0; padding-left: 20px;">3️⃣ LittleScienceAI 접속</div>
+                    <div style="margin: 8px 0; padding-left: 20px;">4️⃣ 코드 입력 후 20분 체험!</div>
+                </div>
+                <p><small>📧 이메일을 확인해주세요!</small></p>
+            `;
+            
+            document.getElementById('resultModal').style.display = 'block';
+        }
+        
+        // 🔥 에러 모달 표시
+        function showErrorModal(message) {
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <div class="modal-error">
+                    <h2>❌ 오류 발생</h2>
+                    <p>${message}</p>
+                    <p>다시 시도해주세요.</p>
+                </div>
+            `;
+            
+            document.getElementById('resultModal').style.display = 'block';
+        }
+        
+        // 🔥 모달 닫기
+        function closeModal() {
+            document.getElementById('resultModal').style.display = 'none';
+        }
+        
+        // 모달 배경 클릭 시 닫기
+        document.getElementById('resultModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+        
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
         
         // 브라우저 핑거프린팅 생성 (간단한 버전)
         function generateDeviceFingerprint() {
