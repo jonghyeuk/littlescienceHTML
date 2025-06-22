@@ -180,11 +180,6 @@
             transform: scale(1.02);
         }
 
-        .input-group.error {
-            border-color: #f44336;
-            box-shadow: 0 0 30px rgba(244, 67, 54, 0.2);
-        }
-
         .input-group input {
             flex: 1;
             border: none;
@@ -215,7 +210,7 @@
             flex-shrink: 0;
         }
 
-        .send-btn:hover:not(:disabled) {
+        .send-btn:hover {
             transform: scale(1.1);
             box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
         }
@@ -229,20 +224,10 @@
 
         .send-btn.loading {
             background: linear-gradient(45deg, #FFA726, #FF9800);
-            animation: spin 1s linear infinite;
         }
 
         .send-btn.success {
             background: linear-gradient(45deg, #66BB6A, #4CAF50);
-        }
-
-        .send-btn.error {
-            background: linear-gradient(45deg, #EF5350, #F44336);
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
 
         /* 알림 메시지 */
@@ -257,33 +242,6 @@
             display: flex;
             align-items: center;
             gap: 10px;
-        }
-
-        /* 진행 상태 표시 */
-        .progress-status {
-            background: #E3F2FD;
-            border: 2px solid #2196F3;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-            display: none;
-            animation: slideIn 0.5s ease;
-        }
-
-        .progress-status.show {
-            display: block;
-        }
-
-        .progress-status h4 {
-            color: #1976D2;
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-
-        .progress-status p {
-            color: #1565C0;
-            margin: 5px 0;
-            font-size: 14px;
         }
 
         /* 결과 메시지 */
@@ -310,12 +268,6 @@
             background: linear-gradient(135deg, #FFCDD2, #EF9A9A);
             color: #B71C1C;
             border: 2px solid #F44336;
-        }
-
-        .result.warning {
-            background: linear-gradient(135deg, #FFF3E0, #FFE0B2);
-            color: #E65100;
-            border: 2px solid #FF9800;
         }
 
         .result h4 {
@@ -354,7 +306,7 @@
             transform: translateY(-2px);
         }
 
-        /* 모달 스타일 개선 */
+        /* 모달 스타일 추가 */
         .modal {
             display: none;
             position: fixed;
@@ -363,45 +315,41 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.6);
-            backdrop-filter: blur(8px);
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
         }
 
         .modal-content {
             background: white;
-            margin: 10% auto;
+            margin: 15% auto;
             padding: 40px;
-            border-radius: 25px;
+            border-radius: 20px;
             width: 90%;
             max-width: 500px;
             text-align: center;
             box-shadow: 0 25px 60px rgba(0,0,0,0.3);
-            animation: modalSlideIn 0.4s ease;
-            position: relative;
+            animation: modalSlideIn 0.3s ease;
         }
 
         @keyframes modalSlideIn {
-            from { opacity: 0; transform: translateY(-50px) scale(0.9); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .modal-content h2 {
             color: #2E7D32;
             margin-bottom: 20px;
-            font-size: 26px;
+            font-size: 24px;
         }
 
         .modal-content .code {
-            font-size: 32px;
+            font-size: 28px;
             color: #4CAF50;
             font-weight: bold;
-            margin: 25px 0;
-            padding: 20px;
-            background: linear-gradient(135deg, #E8F5E8, #F1F8E9);
-            border-radius: 15px;
-            font-family: 'Courier New', monospace;
-            letter-spacing: 2px;
-            border: 3px solid #4CAF50;
+            margin: 20px 0;
+            padding: 15px;
+            background: #E8F5E8;
+            border-radius: 10px;
         }
 
         .modal-content p {
@@ -411,49 +359,34 @@
         }
 
         .modal-btn {
-            background: linear-gradient(45deg, #4CAF50, #45a049);
+            background: #4CAF50;
             color: white;
             border: none;
-            padding: 18px 40px;
-            border-radius: 30px;
+            padding: 15px 30px;
+            border-radius: 8px;
             cursor: pointer;
-            margin-top: 25px;
+            margin-top: 20px;
             font-size: 16px;
             font-weight: bold;
             transition: all 0.3s ease;
-            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
         }
 
         .modal-btn:hover {
-            background: linear-gradient(45deg, #45a049, #388e3c);
+            background: #45a049;
             transform: translateY(-2px);
-            box-shadow: 0 12px 25px rgba(76, 175, 80, 0.4);
         }
 
         .modal-error {
-            background: linear-gradient(135deg, #FFEBEE, #FFCDD2);
-            color: #B71C1C;
-            border: 3px solid #F44336;
-            border-radius: 15px;
-            padding: 25px;
-            margin: 20px 0;
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
         }
 
         .modal-error h2 {
-            color: #B71C1C;
-        }
-
-        .modal-warning {
-            background: linear-gradient(135deg, #FFF8E1, #FFE0B2);
-            color: #E65100;
-            border: 3px solid #FF9800;
-            border-radius: 15px;
-            padding: 25px;
-            margin: 20px 0;
-        }
-
-        .modal-warning h2 {
-            color: #E65100;
+            color: #721c24;
         }
 
         /* 모바일 반응형 */
@@ -499,16 +432,6 @@
                 padding: 8px 20px;
                 font-size: 12px;
             }
-
-            .modal-content {
-                margin: 20% auto;
-                padding: 30px 25px;
-            }
-
-            .modal-content .code {
-                font-size: 24px;
-                padding: 15px;
-            }
         }
 
         @media (max-width: 480px) {
@@ -523,27 +446,6 @@
             .benefits {
                 padding: 20px;
             }
-
-            .modal-content {
-                padding: 25px 20px;
-            }
-        }
-
-        /* 디버그 정보 (개발 모드일 때만 표시) */
-        .debug-info {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 12px;
-            display: none;
-        }
-
-        .debug-info.show {
-            display: block;
         }
     </style>
 </head>
@@ -584,7 +486,7 @@
         </div>
 
         <form class="form-section" onsubmit="handleFormSubmit(event)">
-            <div class="input-group" id="inputGroup">
+            <div class="input-group">
                 <input type="email" id="userEmail" placeholder="📧 이메일 주소를 입력하세요" required>
                 <button type="submit" class="send-btn" id="sendBtn">
                     ➤
@@ -596,12 +498,6 @@
             </div>
         </form>
         
-        <!-- 진행 상태 표시 -->
-        <div class="progress-status" id="progressStatus">
-            <h4 id="progressTitle">처리 중...</h4>
-            <p id="progressMessage">요청을 처리하고 있습니다.</p>
-        </div>
-        
         <div class="result" id="resultMessage"></div>
         
         <div class="bottom-links">
@@ -611,7 +507,7 @@
         </div>
     </div>
 
-    <!-- 개선된 모달 -->
+    <!-- 🔥 모달 추가 -->
     <div id="resultModal" class="modal">
         <div class="modal-content">
             <div id="modalBody">
@@ -621,551 +517,174 @@
         </div>
     </div>
 
-    <!-- 디버그 정보 (개발 모드) -->
-    <div class="debug-info" id="debugInfo">
-        <div id="debugContent"></div>
-    </div>
-
     <script>
-        // 🔒 설정 및 전역 변수 (보안 강화)
-        const CONFIG = {
-            // 🚨 보안 주의: 실제 운영 시에는 환경변수나 서버 설정으로 관리
-            GAS_URL: 'https://script.google.com/macros/s/AKfycbxk2od85OXtH8n1eKmsnKABkzwvx6u_S1IEoTI4-Ru69Iwr-PswaCQhFXALGGWyVdJVrg/exec',
-            DEBUG_MODE: false, // 🔒 운영 시 false로 변경
-            TIMEOUT_DURATION: 30000,
-            RETRY_COUNT: 2,
-            // 🔒 보안 설정
-            SECURITY: {
-                RATE_LIMIT: true,
-                HIDE_ERRORS: true, // 상세 오류 정보 숨김
-                OBFUSCATE_DATA: true // 민감한 데이터 난독화
-            }
-        };
-
-        let requestInProgress = false;
-        let requestTimeout = null;
-
-        // 🔥 메인 폼 제출 처리 함수 (완전 개선 버전)
+        // 🔥 모달 방식으로 변경 (팝업 대신)
         async function handleFormSubmit(event) {
             event.preventDefault();
             
-            // 중복 요청 방지
-            if (requestInProgress) {
-                showError('이미 처리 중입니다. 잠시만 기다려주세요.');
-                return;
-            }
+            const email = document.getElementById('userEmail').value;
             
-            const email = document.getElementById('userEmail').value.trim();
-            
-            // 이메일 유효성 검사
             if (!email) {
-                showValidationError('이메일 주소를 입력해주세요.');
+                showError('이메일 주소를 입력해주세요.');
                 return;
             }
             
             if (!isValidEmail(email)) {
-                showValidationError('올바른 이메일 주소를 입력해주세요.');
+                showError('올바른 이메일 주소를 입력해주세요.');
                 return;
             }
             
-            // 처리 시작
-            requestInProgress = true;
-            await processFreeTrial(email);
-        }
-
-        // 🔥 무료체험 처리 메인 함수 (URL 체크 추가)
-        async function processFreeTrial(email) {
+            // 로딩 상태 시작
+            const btn = document.getElementById('sendBtn');
+            btn.disabled = true;
+            btn.className = 'send-btn loading';
+            btn.innerHTML = '⏳';
+            document.getElementById('resultMessage').style.display = 'none';
+            
             try {
-                // 🚨 URL 체크 먼저!
-                if (!checkGASUrl()) {
-                    return;
+                // 🔥 실제 IP 주소 가져오기
+                let userIP = 'unknown';
+                try {
+                    const ipResponse = await fetch('https://api.ipify.org?format=json');
+                    const ipData = await ipResponse.json();
+                    userIP = ipData.ip || 'unknown';
+                    console.log('사용자 IP:', userIP);
+                } catch (ipError) {
+                    console.log('IP 가져오기 실패:', ipError);
+                    userIP = 'unknown';
                 }
                 
-                // UI 상태 업데이트
-                setLoadingState(true);
-                showProgressStatus('요청 준비 중...', '사용자 정보를 수집하고 있습니다.');
+                // iframe을 사용해서 요청 처리
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.name = 'hiddenFrame';
+                document.body.appendChild(iframe);
                 
-                // 🔥 사용자 정보 수집
-                const userInfo = await collectUserInfo(email);
-                debugLog('사용자 정보 수집 완료:', userInfo);
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'https://script.google.com/macros/s/AKfycbzDeQ_iHFhdltpS68thRT7Zv31yjDC6znP9SLA14jhtWLmY20kucoPWlUkmQWaztFoH/exec';
+                form.target = 'hiddenFrame';
                 
-                showProgressStatus('서버 연결 중...', '무료체험 서버에 연결하고 있습니다.');
+                // 데이터 추가
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'free_trial';
+                form.appendChild(actionInput);
                 
-                // 🔥 서버로 요청 전송 (JSONP 방식)
-                const result = await sendRequestToServer(userInfo);
-                debugLog('서버 응답:', result);
+                const emailInput = document.createElement('input');
+                emailInput.type = 'hidden';
+                emailInput.name = 'userEmail';
+                emailInput.value = email;
+                form.appendChild(emailInput);
                 
-                // 🔥 결과 처리
-                handleServerResponse(result, email);
+                // 🔥 실제 IP 주소 전송
+                const ipInput = document.createElement('input');
+                ipInput.type = 'hidden';
+                ipInput.name = 'userIP';
+                ipInput.value = userIP;
+                form.appendChild(ipInput);
+                
+                const fingerprintInput = document.createElement('input');
+                fingerprintInput.type = 'hidden';
+                fingerprintInput.name = 'deviceFingerprint';
+                fingerprintInput.value = generateDeviceFingerprint();
+                form.appendChild(fingerprintInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+                
+                // 폼과 iframe 정리
+                setTimeout(() => {
+                    document.body.removeChild(form);
+                    document.body.removeChild(iframe);
+                }, 1000);
+                
+                // 성공 메시지 표시
+                btn.className = 'send-btn success';
+                btn.innerHTML = '✅';
+                
+                // 🔥 모달로 결과 표시
+                showSuccessModal(email);
                 
             } catch (error) {
-                console.error('무료체험 처리 오류:', error);
-                handleError(error);
-            } finally {
-                requestInProgress = false;
-                setLoadingState(false);
-                hideProgressStatus();
-                clearTimeout(requestTimeout);
-            }
-        }
-
-        // 🔥 사용자 정보 수집 (IP, 핑거프린트 등)
-        async function collectUserInfo(email) {
-            const userInfo = {
-                email: email,
-                ip: 'unknown',
-                fingerprint: 'unknown',
-                timestamp: new Date().toISOString()
-            };
-
-            try {
-                // IP 주소 가져오기 (여러 서비스 시도)
-                userInfo.ip = await getUserIP();
-                debugLog('IP 주소 수집 완료:', userInfo.ip);
-            } catch (ipError) {
-                console.warn('IP 주소 수집 실패:', ipError);
-                userInfo.ip = 'unknown';
-            }
-
-            try {
-                // 기기 핑거프린트 생성
-                userInfo.fingerprint = generateDeviceFingerprint();
-                debugLog('핑거프린트 생성 완료:', userInfo.fingerprint);
-            } catch (fpError) {
-                console.warn('핑거프린트 생성 실패:', fpError);
-                userInfo.fingerprint = 'unknown';
-            }
-
-            return userInfo;
-        }
-
-        // 🔥 IP 주소 가져오기 (여러 서비스 시도)
-        async function getUserIP() {
-            const ipServices = [
-                'https://api.ipify.org?format=json',
-                'https://ipapi.co/json/',
-                'https://httpbin.org/ip'
-            ];
-
-            for (const service of ipServices) {
-                try {
-                    const response = await Promise.race([
-                        fetch(service),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
-                    ]);
-                    
-                    const data = await response.json();
-                    const ip = data.ip || data.origin?.split(',')[0] || 'unknown';
-                    
-                    if (ip && ip !== 'unknown') {
-                        return ip.trim();
-                    }
-                } catch (error) {
-                    console.warn(`IP 서비스 ${service} 실패:`, error.message);
-                }
+                showError('요청 처리 중 오류가 발생했습니다.');
+                console.error('Form 생성 오류:', error);
+                resetButton();
             }
             
-            return 'unknown';
+            // 3초 후 버튼 리셋
+            setTimeout(() => {
+                resetButton();
+            }, 3000);
         }
-
-        // 🔥 JSONP 방식으로 서버에 요청 전송 (GET 방식 추가)
-        function sendRequestToServer(userInfo) {
-            return new Promise((resolve, reject) => {
-                // 타임아웃 설정
-                requestTimeout = setTimeout(() => {
-                    cleanup();
-                    reject(new Error('서버 응답 시간이 초과되었습니다.'));
-                }, CONFIG.TIMEOUT_DURATION);
-
-                // 콜백 함수명 생성
-                const callbackName = 'freeTrial_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-                
-                // 전역 콜백 함수 등록
-                window[callbackName] = function(response) {
-                    cleanup();
-                    resolve(response);
-                };
-
-                // 🔥 GET 방식으로 JSONP 요청 (더 안정적)
-                const params = new URLSearchParams({
-                    callback: callbackName,
-                    action: 'free_trial',
-                    userEmail: userInfo.email,
-                    userIP: userInfo.ip,
-                    deviceFingerprint: userInfo.fingerprint,
-                    origin: window.location.origin,
-                    timestamp: userInfo.timestamp
-                });
-
-                const script = document.createElement('script');
-                script.src = `${CONFIG.GAS_URL}?${params.toString()}`;
-
-                script.onerror = function() {
-                    cleanup();
-                    // 🔥 fallback: iframe 방식 시도
-                    debugLog('JSONP 실패, iframe 방식으로 재시도');
-                    sendRequestViaIframe(userInfo).then(resolve).catch(reject);
-                };
-
-                // 정리 함수
-                function cleanup() {
-                    if (script.parentNode) {
-                        script.parentNode.removeChild(script);
-                    }
-                    if (window[callbackName]) {
-                        delete window[callbackName];
-                    }
-                    clearTimeout(requestTimeout);
-                }
-
-                // 스크립트 추가
-                document.head.appendChild(script);
-                debugLog('JSONP 요청 전송', script.src);
-            });
-        }
-
-        // 🔥 Fallback: iframe 방식
-        function sendRequestViaIframe(userInfo) {
-            return new Promise((resolve, reject) => {
-                try {
-                    const iframe = document.createElement('iframe');
-                    iframe.style.display = 'none';
-                    iframe.name = 'hiddenFrame';
-                    document.body.appendChild(iframe);
-                    
-                    const form = document.createElement('form');
-                    form.method = 'GET'; // 🔥 GET으로 변경
-                    form.action = CONFIG.GAS_URL;
-                    form.target = 'hiddenFrame';
-                    
-                    // 데이터 추가
-                    const fields = {
-                        action: 'free_trial',
-                        userEmail: userInfo.email,
-                        userIP: userInfo.ip,
-                        deviceFingerprint: userInfo.fingerprint,
-                        origin: window.location.origin,
-                        timestamp: userInfo.timestamp
-                    };
-
-                    Object.keys(fields).forEach(key => {
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = key;
-                        input.value = fields[key];
-                        form.appendChild(input);
-                    });
-                    
-                    document.body.appendChild(form);
-                    form.submit();
-                    
-                    // iframe 로드 대기
-                    setTimeout(() => {
-                        document.body.removeChild(form);
-                        document.body.removeChild(iframe);
-                        
-                        // 🔥 iframe 방식에서는 정확한 결과를 알 수 없으므로 일단 성공으로 처리
-                        resolve({
-                            success: true,
-                            message: '요청이 전송되었습니다. 이메일을 확인해주세요.',
-                            warning: 'IFRAME_METHOD'
-                        });
-                    }, 3000);
-                    
-                } catch (error) {
-                    reject(error);
-                }
-            });
-        }
-
-        // 🔥 서버 응답 처리
-        function handleServerResponse(response, email) {
-            debugLog('서버 응답 처리:', response);
-
-            if (!response) {
-                throw new Error('서버로부터 응답을 받지 못했습니다.');
-            }
-
-            if (response.success) {
-                // 성공 케이스
-                if (response.warning) {
-                    showWarningModal(response, email);
-                } else {
-                    showSuccessModal(response, email);
-                }
-            } else {
-                // 실패 케이스 - 에러 유형에 따라 다른 처리
-                handleFailureResponse(response);
-            }
-        }
-
-        // 🔥 실패 응답 처리 (에러 유형별 맞춤 메시지) - 3중 보안 대응
-        function handleFailureResponse(response) {
-            const errorType = response.error || 'UNKNOWN_ERROR';
-            const message = response.message || '알 수 없는 오류가 발생했습니다.';
-
-            switch (errorType) {
-                case 'DUPLICATE_EMAIL':
-                    showDuplicateModal('이메일', message, response.details);
-                    break;
-                case 'DUPLICATE_IP':
-                    showDuplicateModal('IP', message, response.details);
-                    break;
-                case 'DUPLICATE_DEVICE':
-                    showDuplicateModal('device', message, response.details);
-                    break;
-                case 'OUT_OF_STOCK':
-                    showOutOfStockModal(message);
-                    break;
-                case 'INVALID_EMAIL':
-                    showValidationError(message);
-                    break;
-                default:
-                    showErrorModal(message, response);
-            }
-        }
-
-        // 🔥 성공 모달 (개선된 버전)
-        function showSuccessModal(response, email) {
+        
+        // 🔥 성공 모달 표시
+        function showSuccessModal(email) {
             const modalBody = document.getElementById('modalBody');
             modalBody.innerHTML = `
                 <h2>🎉 무료체험 신청 완료!</h2>
-                <div class="code">코드 발송 완료!</div>
+                <div class="code">코드가 발송되었습니다!</div>
                 <p><strong>${email}</strong>으로<br>20분 체험 코드가 발송되었습니다.</p>
-                
-                <div style="background: linear-gradient(135deg, #E8F5E8, #F1F8E9); border: 3px solid #4CAF50; border-radius: 15px; padding: 20px; margin: 25px 0; font-size: 14px; text-align: left;">
+                <div style="background: #F1F8E9; border: 2px solid #4CAF50; border-radius: 10px; padding: 15px; margin: 20px 0; font-size: 14px; text-align: left;">
                     <strong>📌 다음 단계:</strong><br>
-                    <div style="margin: 8px 0; padding-left: 20px;">1️⃣ 이메일 확인 (${response.details?.estimatedDelivery || '2-3분'} 소요)</div>
+                    <div style="margin: 8px 0; padding-left: 20px;">1️⃣ 이메일 확인 (2-3분 소요)</div>
                     <div style="margin: 8px 0; padding-left: 20px;">2️⃣ 체험 코드 복사</div>
                     <div style="margin: 8px 0; padding-left: 20px;">3️⃣ LittleScienceAI 접속</div>
-                    <div style="margin: 8px 0; padding-left: 20px;">4️⃣ 코드 입력 후 ${response.details?.validDuration || '20분'} 체험!</div>
+                    <div style="margin: 8px 0; padding-left: 20px;">4️⃣ 코드 입력 후 20분 체험!</div>
                 </div>
-
-                <div style="background: #E3F2FD; border: 2px solid #2196F3; border-radius: 10px; padding: 15px; margin: 20px 0; font-size: 13px;">
-                    <strong>💡 팁:</strong> 이메일이 보이지 않으면 스팸함도 확인해보세요!
-                </div>
-
                 <p><small>📧 이메일을 확인해주세요!</small></p>
             `;
             
-            showModal();
+            document.getElementById('resultModal').style.display = 'block';
         }
-
-        // 🔥 경고 모달 (이메일 발송 실패 등)
-        function showWarningModal(response, email) {
-            const modalBody = document.getElementById('modalBody');
-            modalBody.innerHTML = `
-                <div class="modal-warning">
-                    <h2>⚠️ 부분적 성공</h2>
-                    <p><strong>체험 코드가 할당되었지만 이메일 발송에 실패했습니다.</strong></p>
-                    
-                    <div class="code">${response.code}</div>
-                    
-                    <div style="background: white; border: 2px solid #FF9800; border-radius: 10px; padding: 15px; margin: 15px 0; text-align: left; font-size: 14px;">
-                        <strong>📝 코드를 직접 사용하세요:</strong><br>
-                        <div style="margin: 8px 0; padding-left: 15px;">1️⃣ 위의 코드를 복사하세요</div>
-                        <div style="margin: 8px 0; padding-left: 15px;">2️⃣ LittleScienceAI에 접속</div>
-                        <div style="margin: 8px 0; padding-left: 15px;">3️⃣ 코드를 입력하여 체험</div>
-                    </div>
-                    
-                    <p><small>코드는 20분간 유효합니다.</small></p>
-                </div>
-            `;
-            
-            showModal();
-        }
-
-        // 🔥 중복 감지 모달 (3중 보안 대응)
-        function showDuplicateModal(type, message, details) {
-            const modalBody = document.getElementById('modalBody');
-            let typeText, icon, description;
-            
-            switch(type) {
-                case '이메일':
-                    typeText = '이메일 주소';
-                    icon = '📧';
-                    description = '같은 이메일 주소로 이미 체험하셨습니다.';
-                    break;
-                case 'IP':
-                    typeText = 'IP 주소 (네트워크)';
-                    icon = '🌐';
-                    description = '같은 네트워크(IP)에서 이미 체험하셨습니다.';
-                    break;
-                case 'device':
-                    typeText = '기기 정보';
-                    icon = '📱';
-                    description = '같은 기기에서 이미 체험하셨습니다.';
-                    break;
-                default:
-                    typeText = '정보';
-                    icon = '🚫';
-                    description = '중복 사용이 감지되었습니다.';
-            }
-            
-            modalBody.innerHTML = `
-                <div class="modal-error">
-                    <h2>🚫 중복 체험 감지</h2>
-                    <p><strong>${message}</strong></p>
-                    
-                    <div style="background: white; border: 2px solid #F44336; border-radius: 10px; padding: 15px; margin: 15px 0; text-align: left; font-size: 14px;">
-                        <strong>📋 상세 정보:</strong><br>
-                        <div style="margin: 8px 0;">${icon} 감지된 ${typeText}: 확인됨</div>
-                        ${details?.usedDate ? `<div style="margin: 8px 0;">📅 이전 사용일: ${new Date(details.usedDate).toLocaleDateString('ko-KR')}</div>` : ''}
-                        <div style="margin: 8px 0;">🔒 3중 보안 시스템에서 차단됨</div>
-                        <div style="margin: 8px 0;">⚠️ 무료체험은 1인 1회만 가능합니다</div>
-                    </div>
-                    
-                    <div style="background: #FFF3E0; border: 2px solid #FF9800; border-radius: 10px; padding: 15px; margin: 15px 0; text-align: left; font-size: 14px;">
-                        <strong>💡 ${description}</strong><br><br>
-                        <strong>해결 방법:</strong><br>
-                        • 다른 이메일 주소 사용<br>
-                        • 다른 네트워크에서 접속<br>
-                        • 다른 기기에서 시도<br>
-                        • 유료 이용권 구매하여 계속 사용
-                    </div>
-                </div>
-            `;
-            
-            showModal();
-        }
-
-        // 🔥 재고 부족 모달
-        function showOutOfStockModal(message) {
-            const modalBody = document.getElementById('modalBody');
-            modalBody.innerHTML = `
-                <div class="modal-error">
-                    <h2>📦 재고 부족</h2>
-                    <p><strong>${message}</strong></p>
-                    
-                    <div style="background: white; border: 2px solid #F44336; border-radius: 10px; padding: 15px; margin: 15px 0; text-align: left; font-size: 14px;">
-                        <strong>📋 현재 상황:</strong><br>
-                        <div style="margin: 8px 0;">• 무료체험 코드가 모두 소진되었습니다</div>
-                        <div style="margin: 8px 0;">• 곧 새로운 코드가 추가될 예정입니다</div>
-                    </div>
-                    
-                    <p><strong>💡 대안:</strong><br>
-                    잠시 후 다시 시도하거나,<br>
-                    유료 이용권으로 바로 시작해보세요!</p>
-                </div>
-            `;
-            
-            showModal();
-        }
-
-        // 🔥 일반 에러 모달
-        function showErrorModal(message, response = null) {
+        
+        // 🔥 에러 모달 표시
+        function showErrorModal(message) {
             const modalBody = document.getElementById('modalBody');
             modalBody.innerHTML = `
                 <div class="modal-error">
                     <h2>❌ 오류 발생</h2>
-                    <p><strong>${message}</strong></p>
-                    
-                    ${response?.errorDetails ? `
-                    <div style="background: white; border: 2px solid #F44336; border-radius: 10px; padding: 15px; margin: 15px 0; text-align: left; font-size: 12px;">
-                        <strong>🔧 기술 정보:</strong><br>
-                        <div style="margin: 8px 0; font-family: monospace; color: #666;">${response.errorDetails}</div>
-                    </div>
-                    ` : ''}
-                    
-                    <p><strong>💡 해결 방법:</strong><br>
-                    잠시 후 다시 시도하거나,<br>
-                    문제가 계속되면 고객지원에 문의해주세요.</p>
+                    <p>${message}</p>
+                    <p>다시 시도해주세요.</p>
                 </div>
             `;
             
-            showModal();
+            document.getElementById('resultModal').style.display = 'block';
         }
-
-        // 🔥 진행 상태 표시
-        function showProgressStatus(title, message) {
-            const progressStatus = document.getElementById('progressStatus');
-            const progressTitle = document.getElementById('progressTitle');
-            const progressMessage = document.getElementById('progressMessage');
-            
-            progressTitle.textContent = title;
-            progressMessage.textContent = message;
-            progressStatus.classList.add('show');
+        
+        // 🔥 모달 닫기
+        function closeModal() {
+            document.getElementById('resultModal').style.display = 'none';
         }
-
-        function hideProgressStatus() {
-            const progressStatus = document.getElementById('progressStatus');
-            progressStatus.classList.remove('show');
-        }
-
-        // 🔥 UI 상태 관리
-        function setLoadingState(loading) {
-            const btn = document.getElementById('sendBtn');
-            const inputGroup = document.getElementById('inputGroup');
-            const emailInput = document.getElementById('userEmail');
-            
-            if (loading) {
-                btn.disabled = true;
-                btn.className = 'send-btn loading';
-                btn.innerHTML = '⏳';
-                emailInput.disabled = true;
-                inputGroup.style.opacity = '0.7';
-            } else {
-                btn.disabled = false;
-                btn.className = 'send-btn';
-                btn.innerHTML = '➤';
-                emailInput.disabled = false;
-                inputGroup.style.opacity = '1';
+        
+        // 모달 배경 클릭 시 닫기
+        document.getElementById('resultModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
             }
-        }
-
-        // 🔥 검증 오류 표시
-        function showValidationError(message) {
-            const inputGroup = document.getElementById('inputGroup');
-            const emailInput = document.getElementById('userEmail');
-            
-            inputGroup.classList.add('error');
-            emailInput.focus();
-            
-            showError(message);
-            
-            // 3초 후 에러 스타일 제거
-            setTimeout(() => {
-                inputGroup.classList.remove('error');
-            }, 3000);
-        }
-
-        // 🔒 에러 처리 (보안 강화)
-        function handleError(error) {
-            console.error('처리 오류:', error);
-            
-            // 🔒 보안: 상세 오류 정보는 숨김
-            if (CONFIG.SECURITY.HIDE_ERRORS) {
-                showErrorModal('시스템 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-            } else {
-                showErrorModal(error.message || '요청 처리 중 오류가 발생했습니다.');
+        });
+        
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
             }
-        }
-
-        // 🔒 디버그 로그 (보안 고려)
-        function debugLog(message, data = null) {
-            if (CONFIG.DEBUG_MODE) {
-                console.log(`[DEBUG] ${message}`, data);
-                updateDebugInfo(message, data);
-            }
-            // 🔒 운영 환경에서는 민감한 정보 로깅 방지
-        }
-
-        // 🔥 유틸리티 함수들
+        });
+        
+        // 브라우저 핑거프린팅 생성 (간단한 버전)
         function generateDeviceFingerprint() {
             try {
                 const fingerprint = [
                     navigator.userAgent.slice(0, 50),
                     navigator.language,
                     screen.width + 'x' + screen.height,
-                    screen.colorDepth,
-                    new Date().getTimezoneOffset(),
-                    navigator.hardwareConcurrency || 'unknown',
-                    navigator.maxTouchPoints || 0
+                    new Date().getTimezoneOffset()
                 ].join('|');
                 
-                return btoa(fingerprint).slice(0, 24);
+                return btoa(fingerprint).slice(0, 20);
             } catch (error) {
-                return 'unknown_' + Math.random().toString(36).substr(2, 12);
+                return 'unknown';
             }
         }
         
@@ -1177,7 +696,7 @@
         function showSuccess(message) {
             const resultDiv = document.getElementById('resultMessage');
             resultDiv.className = 'result success';
-            resultDiv.innerHTML = `<h4>✅ 성공</h4><p>${message}</p>`;
+            resultDiv.innerHTML = message;
             resultDiv.style.display = 'block';
             resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
@@ -1188,287 +707,29 @@
             resultDiv.innerHTML = `<h4>❌ 오류</h4><p>${message}</p>`;
             resultDiv.style.display = 'block';
         }
-
-        function showWarning(message) {
-            const resultDiv = document.getElementById('resultMessage');
-            resultDiv.className = 'result warning';
-            resultDiv.innerHTML = `<h4>⚠️ 주의</h4><p>${message}</p>`;
-            resultDiv.style.display = 'block';
-        }
-
-        // 🔥 모달 관리
-        function showModal() {
-            document.getElementById('resultModal').style.display = 'block';
+        
+        function resetButton() {
+            const btn = document.getElementById('sendBtn');
+            btn.disabled = false;
+            btn.className = 'send-btn';
+            btn.innerHTML = '➤';
         }
         
-        function closeModal() {
-            document.getElementById('resultModal').style.display = 'none';
-        }
-        
-        // 🔥 디버그 기능
-        function debugLog(message, data = null) {
-            if (CONFIG.DEBUG_MODE) {
-                console.log(`[DEBUG] ${message}`, data);
-                updateDebugInfo(message, data);
-            }
-        }
-
-        function updateDebugInfo(message, data) {
-            const debugInfo = document.getElementById('debugInfo');
-            const debugContent = document.getElementById('debugContent');
+        // 이메일 입력 시 실시간 유효성 검사
+        document.getElementById('userEmail').addEventListener('input', function(e) {
+            const email = e.target.value;
+            const btn = document.getElementById('sendBtn');
             
-            if (CONFIG.DEBUG_MODE) {
-                debugInfo.classList.add('show');
-                const timestamp = new Date().toLocaleTimeString();
-                debugContent.innerHTML += `<div>[${timestamp}] ${message}</div>`;
-                
-                // 최대 10줄만 유지
-                const lines = debugContent.getElementsByTagName('div');
-                if (lines.length > 10) {
-                    debugContent.removeChild(lines[0]);
-                }
-            }
-        }
-
-        // 🔥 이벤트 리스너 등록
-        document.addEventListener('DOMContentLoaded', function() {
-            // 모달 배경 클릭 시 닫기
-            document.getElementById('resultModal').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeModal();
-                }
-            });
-            
-            // ESC 키로 모달 닫기
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    closeModal();
-                }
-            });
-
-            // 이메일 입력 시 실시간 유효성 검사
-            document.getElementById('userEmail').addEventListener('input', function(e) {
-                const email = e.target.value;
-                const btn = document.getElementById('sendBtn');
-                const inputGroup = document.getElementById('inputGroup');
-                
-                // 에러 상태 제거
-                inputGroup.classList.remove('error');
-                
-                if (email && isValidEmail(email)) {
-                    btn.style.opacity = '1';
-                    btn.style.transform = 'scale(1)';
-                } else if (email) {
-                    btn.style.opacity = '0.7';
-                    btn.style.transform = 'scale(0.95)';
-                } else {
-                    btn.style.opacity = '1';
-                    btn.style.transform = 'scale(1)';
-                }
-            });
-
-            // 개발 모드 토글 (Ctrl+Shift+D)
-            document.addEventListener('keydown', function(e) {
-                if (e.ctrlKey && e.shiftKey && e.key === 'D') {
-                    CONFIG.DEBUG_MODE = !CONFIG.DEBUG_MODE;
-                    console.log('디버그 모드:', CONFIG.DEBUG_MODE ? '활성화' : '비활성화');
-                    
-                    if (!CONFIG.DEBUG_MODE) {
-                        document.getElementById('debugInfo').classList.remove('show');
-                    }
-                }
-            });
-
-            debugLog('페이지 로드 완료', { timestamp: new Date().toISOString() });
-        });
-
-        // 🔥 디버그 및 테스트 함수들 (강화된 진단 도구)
-        function testConnection() {
-            debugLog('연결 테스트 시작');
-            showProgressStatus('연결 테스트 중...', 'GAS 서버와의 연결을 확인하고 있습니다.');
-            
-            // 1. 기본 GET 요청 테스트
-            fetch(CONFIG.GAS_URL)
-                .then(response => {
-                    debugLog('연결 테스트 응답', {status: response.status, url: response.url});
-                    hideProgressStatus();
-                    
-                    if (response.ok) {
-                        showSuccess('✅ 서버 연결 성공! doGet 페이지를 확인했습니다.');
-                    } else if (response.status === 302) {
-                        showError(`❌ 302 리다이렉트: 권한 설정 문제입니다. GAS 배포 설정을 확인하세요.`);
-                    } else {
-                        showError(`❌ 서버 응답 오류: ${response.status}`);
-                    }
-                })
-                .catch(error => {
-                    debugLog('연결 테스트 실패', error);
-                    hideProgressStatus();
-                    showError(`❌ 연결 실패: ${error.message}`);
-                });
-        }
-
-        function showDebugInfo() {
-            // 현재 사용 중인 URL 표시
-            const currentUrl = CONFIG.GAS_URL;
-            const isDefaultUrl = currentUrl.includes('YOUR_DEPLOYMENT_ID_HERE');
-            
-            const info = {
-                현재시간: new Date().toLocaleString('ko-KR'),
-                GAS_URL: currentUrl,
-                URL상태: isDefaultUrl ? '❌ 기본값 (수정 필요)' : '✅ 설정됨',
-                사용자정보: {
-                    userAgent: navigator.userAgent.substring(0, 50) + '...',
-                    언어: navigator.language,
-                    화면크기: `${screen.width}x${screen.height}`,
-                    시간대: new Date().getTimezoneOffset()
-                },
-                설정: CONFIG,
-                페이지URL: window.location.href,
-                보안시스템: {
-                    이메일중복체크: '활성화',
-                    IP중복체크: '활성화',
-                    기기중복체크: '활성화',
-                    보안수준: '3중 보안'
-                }
-            };
-            
-            console.log('🔍 디버그 정보 (3중 보안 시스템):', info);
-            debugLog('디버그 정보 표시', info);
-            
-            // URL 문제 확인
-            if (isDefaultUrl) {
-                alert('❌ GAS URL이 기본값입니다!\n\n1. GAS 배포 완료 후\n2. 배포 URL을 복사하여\n3. CONFIG.GAS_URL에 입력하세요.');
+            if (email && isValidEmail(email)) {
+                btn.style.opacity = '1';
+                btn.style.transform = 'scale(1)';
+            } else if (email) {
+                btn.style.opacity = '0.7';
+                btn.style.transform = 'scale(0.95)';
             } else {
-                alert('디버그 정보가 콘솔에 출력되었습니다. F12를 눌러 확인하세요.');
+                btn.style.opacity = '1';
+                btn.style.transform = 'scale(1)';
             }
-        }
-
-        function testBasicRequest() {
-            debugLog('기본 요청 테스트 시작');
-            
-            const testUrl = `${CONFIG.GAS_URL}?action=test&timestamp=${Date.now()}`;
-            debugLog('테스트 URL', testUrl);
-            
-            // URL 유효성 검사
-            if (CONFIG.GAS_URL.includes('YOUR_DEPLOYMENT_ID_HERE')) {
-                showError('❌ GAS URL이 설정되지 않았습니다! 먼저 GAS 배포 URL을 입력하세요.');
-                return;
-            }
-            
-            const script = document.createElement('script');
-            script.src = testUrl;
-            script.onload = () => {
-                debugLog('기본 요청 성공');
-                document.head.removeChild(script);
-                showSuccess('✅ 기본 요청 성공!');
-            };
-            script.onerror = () => {
-                debugLog('기본 요청 실패');
-                document.head.removeChild(script);
-                showError('❌ 기본 요청 실패: GAS 배포 설정을 확인하세요.');
-            };
-            
-            document.head.appendChild(script);
-        }
-
-        // 🧪 GAS 기본 연결 테스트
-        function testGASConnection() {
-            debugLog('GAS 기본 연결 테스트 시작');
-            showProgressStatus('GAS 테스트 중...', 'Google Apps Script 기본 연결을 확인합니다.');
-            
-            const callbackName = 'simpleTest_' + Date.now();
-            
-            window[callbackName] = function(response) {
-                cleanup();
-                debugLog('GAS 기본 테스트 응답', response);
-                hideProgressStatus();
-                
-                if (response && response.success) {
-                    showSuccess(`✅ GAS 연결 성공! 시간: ${response.timestamp}`);
-                } else {
-                    showError(`❌ GAS 연결 실패: ${response?.message || '알 수 없는 오류'}`);
-                }
-            };
-            
-            const script = document.createElement('script');
-            script.src = `${CONFIG.GAS_URL}?callback=${callbackName}&action=simple_test&timestamp=${Date.now()}`;
-            
-            script.onerror = function() {
-                cleanup();
-                hideProgressStatus();
-                showError('❌ GAS 스크립트 로드 실패: URL이나 권한을 확인하세요.');
-            };
-            
-            function cleanup() {
-                if (script.parentNode) script.parentNode.removeChild(script);
-                if (window[callbackName]) delete window[callbackName];
-            }
-            
-            document.head.appendChild(script);
-        }
-
-        // 🧪 스프레드시트 접근 테스트
-        function testSheetAccess() {
-            debugLog('스프레드시트 접근 테스트 시작');
-            showProgressStatus('시트 테스트 중...', '스프레드시트 접근 권한을 확인합니다.');
-            
-            const callbackName = 'sheetTest_' + Date.now();
-            
-            window[callbackName] = function(response) {
-                cleanup();
-                debugLog('스프레드시트 테스트 응답', response);
-                hideProgressStatus();
-                
-                if (response && response.success) {
-                    const data = response.data;
-                    showSuccess(`✅ 스프레드시트 접근 성공!\n행: ${data.rows}, 열: ${data.columns}\n시트명: ${data.sheetName}`);
-                    console.log('📊 스프레드시트 정보:', data);
-                } else {
-                    showError(`❌ 스프레드시트 접근 실패:\n${response?.message || '알 수 없는 오류'}`);
-                    console.error('스프레드시트 오류 세부사항:', response?.details);
-                }
-            };
-            
-            const script = document.createElement('script');
-            script.src = `${CONFIG.GAS_URL}?callback=${callbackName}&action=sheet_test&timestamp=${Date.now()}`;
-            
-            script.onerror = function() {
-                cleanup();
-                hideProgressStatus();
-                showError('❌ 스프레드시트 테스트 스크립트 로드 실패');
-            };
-            
-            function cleanup() {
-                if (script.parentNode) script.parentNode.removeChild(script);
-                if (window[callbackName]) delete window[callbackName];
-            }
-            
-            document.head.appendChild(script);
-        }
-
-        // 🔥 URL 체크 함수
-        function checkGASUrl() {
-            const currentUrl = CONFIG.GAS_URL;
-            const isDefaultUrl = currentUrl.includes('YOUR_DEPLOYMENT_ID_HERE');
-            
-            if (isDefaultUrl) {
-                showError('❌ GAS URL을 설정해주세요! CONFIG.GAS_URL을 실제 배포 URL로 변경하세요.');
-                return false;
-            }
-            
-            return true;
-        }
-
-        // 🔥 전역 에러 핸들러
-        window.addEventListener('error', function(e) {
-            console.error('전역 에러:', e.error);
-            debugLog('전역 에러 감지', e.error?.message);
-        });
-
-        window.addEventListener('unhandledrejection', function(e) {
-            console.error('처리되지 않은 Promise 거부:', e.reason);
-            debugLog('Promise 거부 감지', e.reason);
         });
     </script>
 </body>
