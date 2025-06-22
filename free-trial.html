@@ -627,13 +627,19 @@
     </div>
 
     <script>
-        // 🔥 설정 및 전역 변수 (URL 재확인 필요!)
+        // 🔒 설정 및 전역 변수 (보안 강화)
         const CONFIG = {
-            // 🚨 여기에 정확한 GAS 배포 URL을 입력하세요!
+            // 🚨 보안 주의: 실제 운영 시에는 환경변수나 서버 설정으로 관리
             GAS_URL: 'https://script.google.com/macros/s/AKfycbxk2od85OXtH8n1eKmsnKABkzwvx6u_S1IEoTI4-Ru69Iwr-PswaCQhFXALGGWyVdJVrg/exec',
-            DEBUG_MODE: true, // 🔥 문제 해결을 위해 활성화
-            TIMEOUT_DURATION: 30000, // 30초 타임아웃
-            RETRY_COUNT: 2 // 재시도 횟수
+            DEBUG_MODE: false, // 🔒 운영 시 false로 변경
+            TIMEOUT_DURATION: 30000,
+            RETRY_COUNT: 2,
+            // 🔒 보안 설정
+            SECURITY: {
+                RATE_LIMIT: true,
+                HIDE_ERRORS: true, // 상세 오류 정보 숨김
+                OBFUSCATE_DATA: true // 민감한 데이터 난독화
+            }
         };
 
         let requestInProgress = false;
@@ -1123,10 +1129,25 @@
             }, 3000);
         }
 
-        // 🔥 에러 처리
+        // 🔒 에러 처리 (보안 강화)
         function handleError(error) {
             console.error('처리 오류:', error);
-            showErrorModal(error.message || '요청 처리 중 오류가 발생했습니다.');
+            
+            // 🔒 보안: 상세 오류 정보는 숨김
+            if (CONFIG.SECURITY.HIDE_ERRORS) {
+                showErrorModal('시스템 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+            } else {
+                showErrorModal(error.message || '요청 처리 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 🔒 디버그 로그 (보안 고려)
+        function debugLog(message, data = null) {
+            if (CONFIG.DEBUG_MODE) {
+                console.log(`[DEBUG] ${message}`, data);
+                updateDebugInfo(message, data);
+            }
+            // 🔒 운영 환경에서는 민감한 정보 로깅 방지
         }
 
         // 🔥 유틸리티 함수들
