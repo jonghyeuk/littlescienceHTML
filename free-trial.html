@@ -519,7 +519,7 @@
 
     <script>
         // 🔥 모달 방식으로 변경 (팝업 대신)
-        function handleFormSubmit(event) {
+        async function handleFormSubmit(event) {
             event.preventDefault();
             
             const email = document.getElementById('userEmail').value;
@@ -542,7 +542,19 @@
             document.getElementById('resultMessage').style.display = 'none';
             
             try {
-                // 🔥 iframe을 사용해서 요청 처리
+                // 🔥 실제 IP 주소 가져오기
+                let userIP = 'unknown';
+                try {
+                    const ipResponse = await fetch('https://api.ipify.org?format=json');
+                    const ipData = await ipResponse.json();
+                    userIP = ipData.ip || 'unknown';
+                    console.log('사용자 IP:', userIP);
+                } catch (ipError) {
+                    console.log('IP 가져오기 실패:', ipError);
+                    userIP = 'unknown';
+                }
+                
+                // iframe을 사용해서 요청 처리
                 const iframe = document.createElement('iframe');
                 iframe.style.display = 'none';
                 iframe.name = 'hiddenFrame';
@@ -566,10 +578,11 @@
                 emailInput.value = email;
                 form.appendChild(emailInput);
                 
+                // 🔥 실제 IP 주소 전송
                 const ipInput = document.createElement('input');
                 ipInput.type = 'hidden';
                 ipInput.name = 'userIP';
-                ipInput.value = 'browser';
+                ipInput.value = userIP;
                 form.appendChild(ipInput);
                 
                 const fingerprintInput = document.createElement('input');
@@ -597,6 +610,7 @@
             } catch (error) {
                 showError('요청 처리 중 오류가 발생했습니다.');
                 console.error('Form 생성 오류:', error);
+                resetButton();
             }
             
             // 3초 후 버튼 리셋
