@@ -630,7 +630,7 @@
         // 🔥 설정 및 전역 변수 (URL 재확인 필요!)
         const CONFIG = {
             // 🚨 여기에 정확한 GAS 배포 URL을 입력하세요!
-            GAS_URL: 'https://script.google.com/macros/s/AKfycbxk2od85OXtH8n1eKmsnKABkzwvx6u_S1IEoTI4-Ru69Iwr-PswaCQhFXALGGWyVdJVrg/exec',
+            GAS_URL: 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID_HERE/exec',
             DEBUG_MODE: true, // 🔥 문제 해결을 위해 활성화
             TIMEOUT_DURATION: 30000, // 30초 타임아웃
             RETRY_COUNT: 2 // 재시도 횟수
@@ -1351,7 +1351,82 @@
             document.head.appendChild(script);
         }
 
-        // 🔥 URL 체크 함수 추가
+        // 🧪 GAS 기본 연결 테스트
+        function testGASConnection() {
+            debugLog('GAS 기본 연결 테스트 시작');
+            showProgressStatus('GAS 테스트 중...', 'Google Apps Script 기본 연결을 확인합니다.');
+            
+            const callbackName = 'simpleTest_' + Date.now();
+            
+            window[callbackName] = function(response) {
+                cleanup();
+                debugLog('GAS 기본 테스트 응답', response);
+                hideProgressStatus();
+                
+                if (response && response.success) {
+                    showSuccess(`✅ GAS 연결 성공! 시간: ${response.timestamp}`);
+                } else {
+                    showError(`❌ GAS 연결 실패: ${response?.message || '알 수 없는 오류'}`);
+                }
+            };
+            
+            const script = document.createElement('script');
+            script.src = `${CONFIG.GAS_URL}?callback=${callbackName}&action=simple_test&timestamp=${Date.now()}`;
+            
+            script.onerror = function() {
+                cleanup();
+                hideProgressStatus();
+                showError('❌ GAS 스크립트 로드 실패: URL이나 권한을 확인하세요.');
+            };
+            
+            function cleanup() {
+                if (script.parentNode) script.parentNode.removeChild(script);
+                if (window[callbackName]) delete window[callbackName];
+            }
+            
+            document.head.appendChild(script);
+        }
+
+        // 🧪 스프레드시트 접근 테스트
+        function testSheetAccess() {
+            debugLog('스프레드시트 접근 테스트 시작');
+            showProgressStatus('시트 테스트 중...', '스프레드시트 접근 권한을 확인합니다.');
+            
+            const callbackName = 'sheetTest_' + Date.now();
+            
+            window[callbackName] = function(response) {
+                cleanup();
+                debugLog('스프레드시트 테스트 응답', response);
+                hideProgressStatus();
+                
+                if (response && response.success) {
+                    const data = response.data;
+                    showSuccess(`✅ 스프레드시트 접근 성공!\n행: ${data.rows}, 열: ${data.columns}\n시트명: ${data.sheetName}`);
+                    console.log('📊 스프레드시트 정보:', data);
+                } else {
+                    showError(`❌ 스프레드시트 접근 실패:\n${response?.message || '알 수 없는 오류'}`);
+                    console.error('스프레드시트 오류 세부사항:', response?.details);
+                }
+            };
+            
+            const script = document.createElement('script');
+            script.src = `${CONFIG.GAS_URL}?callback=${callbackName}&action=sheet_test&timestamp=${Date.now()}`;
+            
+            script.onerror = function() {
+                cleanup();
+                hideProgressStatus();
+                showError('❌ 스프레드시트 테스트 스크립트 로드 실패');
+            };
+            
+            function cleanup() {
+                if (script.parentNode) script.parentNode.removeChild(script);
+                if (window[callbackName]) delete window[callbackName];
+            }
+            
+            document.head.appendChild(script);
+        }
+
+        // 🔥 URL 체크 함수
         function checkGASUrl() {
             const currentUrl = CONFIG.GAS_URL;
             const isDefaultUrl = currentUrl.includes('YOUR_DEPLOYMENT_ID_HERE');
