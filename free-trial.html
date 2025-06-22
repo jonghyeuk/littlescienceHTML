@@ -518,7 +518,7 @@
     </div>
 
     <script>
-        // 🔥 모달 방식으로 변경 (팝업 대신)
+        // 🔥 IP 수집을 form submit 전에 완료
         async function handleFormSubmit(event) {
             event.preventDefault();
             
@@ -542,19 +542,31 @@
             document.getElementById('resultMessage').style.display = 'none';
             
             try {
-                // 🔥 실제 IP 주소 가져오기
+                // 🔥 IP 수집을 먼저 완료하고 기다림
+                console.log('🔍 IP 주소 수집 중...');
                 let userIP = 'unknown';
+                
                 try {
-                    const ipResponse = await fetch('https://api.ipify.org?format=json');
-                    const ipData = await ipResponse.json();
-                    userIP = ipData.ip || 'unknown';
-                    console.log('사용자 IP:', userIP);
+                    const ipResponse = await fetch('https://api.ipify.org?format=json', {
+                        timeout: 5000  // 5초 타임아웃
+                    });
+                    
+                    if (ipResponse.ok) {
+                        const ipData = await ipResponse.json();
+                        userIP = ipData.ip || 'unknown';
+                        console.log('✅ IP 수집 완료:', userIP);
+                    } else {
+                        console.log('❌ IP API 응답 실패');
+                        userIP = 'api_failed';
+                    }
                 } catch (ipError) {
-                    console.log('IP 가져오기 실패:', ipError);
-                    userIP = 'unknown';
+                    console.log('❌ IP 수집 실패:', ipError);
+                    userIP = 'fetch_failed';
                 }
                 
-                // iframe을 사용해서 요청 처리
+                // 🔥 IP 수집 완료 후 form 전송
+                console.log('📤 최종 IP로 form 전송:', userIP);
+                
                 const iframe = document.createElement('iframe');
                 iframe.style.display = 'none';
                 iframe.name = 'hiddenFrame';
@@ -562,7 +574,7 @@
                 
                 const form = document.createElement('form');
                 form.method = 'POST';
-                form.action = 'https://script.google.com/macros/s/AKfycbzDeQ_iHFhdltpS68thRT7Zv31yjDC6znP9SLA14jhtWLmY20kucoPWlUkmQWaztFoH/exec';
+                form.action = 'https://script.google.com/macros/s/AKfycbzDeQ_iHFhdltpS68thRT7Zv31yjDC6znP9SLA14jhtWLmY20kucoPWlUkmQWaztFoH/exec'; // 🔥 새 배포 URL로 교체하세요!
                 form.target = 'hiddenFrame';
                 
                 // 데이터 추가
@@ -578,7 +590,7 @@
                 emailInput.value = email;
                 form.appendChild(emailInput);
                 
-                // 🔥 실제 IP 주소 전송
+                // 🔥 수집된 실제 IP 전송
                 const ipInput = document.createElement('input');
                 ipInput.type = 'hidden';
                 ipInput.name = 'userIP';
@@ -591,13 +603,20 @@
                 fingerprintInput.value = generateDeviceFingerprint();
                 form.appendChild(fingerprintInput);
                 
+                console.log('📋 전송할 데이터:', {
+                    action: 'free_trial',
+                    userEmail: email,
+                    userIP: userIP,
+                    deviceFingerprint: generateDeviceFingerprint()
+                });
+                
                 document.body.appendChild(form);
                 form.submit();
                 
                 // 폼과 iframe 정리
                 setTimeout(() => {
-                    document.body.removeChild(form);
-                    document.body.removeChild(iframe);
+                    if (document.body.contains(form)) document.body.removeChild(form);
+                    if (document.body.contains(iframe)) document.body.removeChild(iframe);
                 }, 1000);
                 
                 // 성공 메시지 표시
