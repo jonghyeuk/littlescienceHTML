@@ -449,11 +449,10 @@
             document.getElementById('resultMessage').style.display = 'none';
             
             try {
-                // 🔥 구매 시스템과 100% 동일한 동적 form 생성 방식
+                // 🔥 팝업 창으로 변경 (새창 대신)
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = 'https://script.google.com/macros/s/AKfycbzDeQ_iHFhdltpS68thRT7Zv31yjDC6znP9SLA14jhtWLmY20kucoPWlUkmQWaztFoH/exec';
-                form.target = '_blank';
                 
                 // 데이터 추가
                 const actionInput = document.createElement('input');
@@ -481,9 +480,24 @@
                 fingerprintInput.value = generateDeviceFingerprint();
                 form.appendChild(fingerprintInput);
                 
-                document.body.appendChild(form);
-                form.submit();
-                document.body.removeChild(form);
+                // 🔥 팝업 창 열기 (크기 조정)
+                const popup = window.open('', 'freeTrialResult', 
+                    'width=500,height=600,scrollbars=yes,resizable=yes,menubar=no,toolbar=no,status=no,location=no');
+                
+                if (popup) {
+                    form.target = 'freeTrialResult';
+                    document.body.appendChild(form);
+                    form.submit();
+                    document.body.removeChild(form);
+                    
+                    // 팝업에 포커스
+                    popup.focus();
+                } else {
+                    // 팝업이 차단된 경우
+                    showError('팝업이 차단되었습니다. 브라우저에서 팝업을 허용해주세요.');
+                    resetButton();
+                    return;
+                }
                 
                 // 성공 메시지 표시
                 btn.className = 'send-btn success';
@@ -492,11 +506,11 @@
                 showSuccess(`
                     <h4>🎉 무료 체험 요청이 전송되었습니다!</h4>
                     <p><strong>${email}</strong>으로 액세스 코드가 발송됩니다.</p>
-                    <p>📧 새 창이 열리면서 처리 결과를 확인할 수 있습니다.</p>
+                    <p>📧 팝업 창에서 처리 결과를 확인할 수 있습니다.</p>
                     <br>
                     <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 10px; margin-top: 15px;">
                         <strong>📌 다음 단계:</strong><br>
-                        1️⃣ 새 창에서 결과 확인<br>
+                        1️⃣ 팝업에서 결과 확인<br>
                         2️⃣ 이메일에서 액세스 코드 복사<br>
                         3️⃣ 메인 사이트에서 코드 입력<br>
                         4️⃣ 20분 무료 체험 시작!
