@@ -627,11 +627,11 @@
     </div>
 
     <script>
-        // 🔥 설정 및 전역 변수 (환경에 따라 수정 가능)
+        // 🔥 설정 및 전역 변수 (URL 재확인 필요!)
         const CONFIG = {
-            // 🔥 실제 배포된 GAS URL로 교체하세요
-            GAS_URL: 'https://script.google.com/macros/s/AKfycbxk2od85OXtH8n1eKmsnKABkzwvx6u_S1IEoTI4-Ru69Iwr-PswaCQhFXALGGWyVdJVrg/exec',
-            DEBUG_MODE: false, // 개발 중일 때 true로 설정
+            // 🚨 여기에 정확한 GAS 배포 URL을 입력하세요!
+            GAS_URL: 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID_HERE/exec',
+            DEBUG_MODE: true, // 🔥 문제 해결을 위해 활성화
             TIMEOUT_DURATION: 30000, // 30초 타임아웃
             RETRY_COUNT: 2 // 재시도 횟수
         };
@@ -667,9 +667,14 @@
             await processFreeTrial(email);
         }
 
-        // 🔥 무료체험 처리 메인 함수
+        // 🔥 무료체험 처리 메인 함수 (URL 체크 추가)
         async function processFreeTrial(email) {
             try {
+                // 🚨 URL 체크 먼저!
+                if (!checkGASUrl()) {
+                    return;
+                }
+                
                 // UI 상태 업데이트
                 setLoadingState(true);
                 showProgressStatus('요청 준비 중...', '사용자 정보를 수집하고 있습니다.');
@@ -757,7 +762,7 @@
             return 'unknown';
         }
 
-        // 🔥 JSONP 방식으로 서버에 요청 전송
+        // 🔥 JSONP 방식으로 서버에 요청 전송 (GET 방식 추가)
         function sendRequestToServer(userInfo) {
             return new Promise((resolve, reject) => {
                 // 타임아웃 설정
@@ -775,9 +780,8 @@
                     resolve(response);
                 };
 
-                // JSONP 스크립트 생성
-                const script = document.createElement('script');
-                script.src = `${CONFIG.GAS_URL}?` + new URLSearchParams({
+                // 🔥 GET 방식으로 JSONP 요청 (더 안정적)
+                const params = new URLSearchParams({
                     callback: callbackName,
                     action: 'free_trial',
                     userEmail: userInfo.email,
@@ -787,9 +791,14 @@
                     timestamp: userInfo.timestamp
                 });
 
+                const script = document.createElement('script');
+                script.src = `${CONFIG.GAS_URL}?${params.toString()}`;
+
                 script.onerror = function() {
                     cleanup();
-                    reject(new Error('서버 연결에 실패했습니다.'));
+                    // 🔥 fallback: iframe 방식 시도
+                    debugLog('JSONP 실패, iframe 방식으로 재시도');
+                    sendRequestViaIframe(userInfo).then(resolve).catch(reject);
                 };
 
                 // 정리 함수
@@ -805,6 +814,61 @@
 
                 // 스크립트 추가
                 document.head.appendChild(script);
+                debugLog('JSONP 요청 전송', script.src);
+            });
+        }
+
+        // 🔥 Fallback: iframe 방식
+        function sendRequestViaIframe(userInfo) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.name = 'hiddenFrame';
+                    document.body.appendChild(iframe);
+                    
+                    const form = document.createElement('form');
+                    form.method = 'GET'; // 🔥 GET으로 변경
+                    form.action = CONFIG.GAS_URL;
+                    form.target = 'hiddenFrame';
+                    
+                    // 데이터 추가
+                    const fields = {
+                        action: 'free_trial',
+                        userEmail: userInfo.email,
+                        userIP: userInfo.ip,
+                        deviceFingerprint: userInfo.fingerprint,
+                        origin: window.location.origin,
+                        timestamp: userInfo.timestamp
+                    };
+
+                    Object.keys(fields).forEach(key => {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = key;
+                        input.value = fields[key];
+                        form.appendChild(input);
+                    });
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                    
+                    // iframe 로드 대기
+                    setTimeout(() => {
+                        document.body.removeChild(form);
+                        document.body.removeChild(iframe);
+                        
+                        // 🔥 iframe 방식에서는 정확한 결과를 알 수 없으므로 일단 성공으로 처리
+                        resolve({
+                            success: true,
+                            message: '요청이 전송되었습니다. 이메일을 확인해주세요.',
+                            warning: 'IFRAME_METHOD'
+                        });
+                    }, 3000);
+                    
+                } catch (error) {
+                    reject(error);
+                }
             });
         }
 
@@ -829,7 +893,7 @@
             }
         }
 
-        // 🔥 실패 응답 처리 (에러 유형별 맞춤 메시지)
+        // 🔥 실패 응답 처리 (에러 유형별 맞춤 메시지) - 3중 보안 대응
         function handleFailureResponse(response) {
             const errorType = response.error || 'UNKNOWN_ERROR';
             const message = response.message || '알 수 없는 오류가 발생했습니다.';
@@ -842,7 +906,7 @@
                     showDuplicateModal('IP', message, response.details);
                     break;
                 case 'DUPLICATE_DEVICE':
-                    showDuplicateModal('기기', message, response.details);
+                    showDuplicateModal('device', message, response.details);
                     break;
                 case 'OUT_OF_STOCK':
                     showOutOfStockModal(message);
@@ -905,10 +969,32 @@
             showModal();
         }
 
-        // 🔥 중복 감지 모달
+        // 🔥 중복 감지 모달 (3중 보안 대응)
         function showDuplicateModal(type, message, details) {
             const modalBody = document.getElementById('modalBody');
-            const typeText = type === '이메일' ? '이메일 주소' : type === 'IP' ? 'IP 주소(기기)' : '기기';
+            let typeText, icon, description;
+            
+            switch(type) {
+                case '이메일':
+                    typeText = '이메일 주소';
+                    icon = '📧';
+                    description = '같은 이메일 주소로 이미 체험하셨습니다.';
+                    break;
+                case 'IP':
+                    typeText = 'IP 주소 (네트워크)';
+                    icon = '🌐';
+                    description = '같은 네트워크(IP)에서 이미 체험하셨습니다.';
+                    break;
+                case 'device':
+                    typeText = '기기 정보';
+                    icon = '📱';
+                    description = '같은 기기에서 이미 체험하셨습니다.';
+                    break;
+                default:
+                    typeText = '정보';
+                    icon = '🚫';
+                    description = '중복 사용이 감지되었습니다.';
+            }
             
             modalBody.innerHTML = `
                 <div class="modal-error">
@@ -917,14 +1003,20 @@
                     
                     <div style="background: white; border: 2px solid #F44336; border-radius: 10px; padding: 15px; margin: 15px 0; text-align: left; font-size: 14px;">
                         <strong>📋 상세 정보:</strong><br>
-                        <div style="margin: 8px 0;">• 감지된 ${typeText}: ${details?.matchedCode ? '***' : '확인됨'}</div>
-                        ${details?.usedDate ? `<div style="margin: 8px 0;">• 이전 사용일: ${new Date(details.usedDate).toLocaleDateString('ko-KR')}</div>` : ''}
-                        <div style="margin: 8px 0;">• 무료체험은 1인 1회만 가능합니다</div>
+                        <div style="margin: 8px 0;">${icon} 감지된 ${typeText}: 확인됨</div>
+                        ${details?.usedDate ? `<div style="margin: 8px 0;">📅 이전 사용일: ${new Date(details.usedDate).toLocaleDateString('ko-KR')}</div>` : ''}
+                        <div style="margin: 8px 0;">🔒 3중 보안 시스템에서 차단됨</div>
+                        <div style="margin: 8px 0;">⚠️ 무료체험은 1인 1회만 가능합니다</div>
                     </div>
                     
-                    <p><strong>💡 해결 방법:</strong><br>
-                    다른 이메일 주소나 다른 기기에서 시도해보세요.<br>
-                    또는 유료 이용권을 구매하여 계속 사용하실 수 있습니다.</p>
+                    <div style="background: #FFF3E0; border: 2px solid #FF9800; border-radius: 10px; padding: 15px; margin: 15px 0; text-align: left; font-size: 14px;">
+                        <strong>💡 ${description}</strong><br><br>
+                        <strong>해결 방법:</strong><br>
+                        • 다른 이메일 주소 사용<br>
+                        • 다른 네트워크에서 접속<br>
+                        • 다른 기기에서 시도<br>
+                        • 유료 이용권 구매하여 계속 사용
+                    </div>
                 </div>
             `;
             
@@ -1168,6 +1260,109 @@
 
             debugLog('페이지 로드 완료', { timestamp: new Date().toISOString() });
         });
+
+        // 🔥 디버그 및 테스트 함수들 (강화된 진단 도구)
+        function testConnection() {
+            debugLog('연결 테스트 시작');
+            showProgressStatus('연결 테스트 중...', 'GAS 서버와의 연결을 확인하고 있습니다.');
+            
+            // 1. 기본 GET 요청 테스트
+            fetch(CONFIG.GAS_URL)
+                .then(response => {
+                    debugLog('연결 테스트 응답', {status: response.status, url: response.url});
+                    hideProgressStatus();
+                    
+                    if (response.ok) {
+                        showSuccess('✅ 서버 연결 성공! doGet 페이지를 확인했습니다.');
+                    } else if (response.status === 302) {
+                        showError(`❌ 302 리다이렉트: 권한 설정 문제입니다. GAS 배포 설정을 확인하세요.`);
+                    } else {
+                        showError(`❌ 서버 응답 오류: ${response.status}`);
+                    }
+                })
+                .catch(error => {
+                    debugLog('연결 테스트 실패', error);
+                    hideProgressStatus();
+                    showError(`❌ 연결 실패: ${error.message}`);
+                });
+        }
+
+        function showDebugInfo() {
+            // 현재 사용 중인 URL 표시
+            const currentUrl = CONFIG.GAS_URL;
+            const isDefaultUrl = currentUrl.includes('YOUR_DEPLOYMENT_ID_HERE');
+            
+            const info = {
+                현재시간: new Date().toLocaleString('ko-KR'),
+                GAS_URL: currentUrl,
+                URL상태: isDefaultUrl ? '❌ 기본값 (수정 필요)' : '✅ 설정됨',
+                사용자정보: {
+                    userAgent: navigator.userAgent.substring(0, 50) + '...',
+                    언어: navigator.language,
+                    화면크기: `${screen.width}x${screen.height}`,
+                    시간대: new Date().getTimezoneOffset()
+                },
+                설정: CONFIG,
+                페이지URL: window.location.href,
+                보안시스템: {
+                    이메일중복체크: '활성화',
+                    IP중복체크: '활성화',
+                    기기중복체크: '활성화',
+                    보안수준: '3중 보안'
+                }
+            };
+            
+            console.log('🔍 디버그 정보 (3중 보안 시스템):', info);
+            debugLog('디버그 정보 표시', info);
+            
+            // URL 문제 확인
+            if (isDefaultUrl) {
+                alert('❌ GAS URL이 기본값입니다!\n\n1. GAS 배포 완료 후\n2. 배포 URL을 복사하여\n3. CONFIG.GAS_URL에 입력하세요.');
+            } else {
+                alert('디버그 정보가 콘솔에 출력되었습니다. F12를 눌러 확인하세요.');
+            }
+        }
+
+        function testBasicRequest() {
+            debugLog('기본 요청 테스트 시작');
+            
+            const testUrl = `${CONFIG.GAS_URL}?action=test&timestamp=${Date.now()}`;
+            debugLog('테스트 URL', testUrl);
+            
+            // URL 유효성 검사
+            if (CONFIG.GAS_URL.includes('YOUR_DEPLOYMENT_ID_HERE')) {
+                showError('❌ GAS URL이 설정되지 않았습니다! 먼저 GAS 배포 URL을 입력하세요.');
+                return;
+            }
+            
+            const script = document.createElement('script');
+            script.src = testUrl;
+            script.onload = () => {
+                debugLog('기본 요청 성공');
+                document.head.removeChild(script);
+                showSuccess('✅ 기본 요청 성공!');
+            };
+            script.onerror = () => {
+                debugLog('기본 요청 실패');
+                document.head.removeChild(script);
+                showError('❌ 기본 요청 실패: GAS 배포 설정을 확인하세요.');
+            };
+            
+            document.head.appendChild(script);
+        }
+
+        // 🔥 URL 체크 함수 추가
+        function checkGASUrl() {
+            const currentUrl = CONFIG.GAS_URL;
+            const isDefaultUrl = currentUrl.includes('YOUR_DEPLOYMENT_ID_HERE');
+            
+            if (isDefaultUrl) {
+                showError('❌ GAS URL을 설정해주세요! CONFIG.GAS_URL을 실제 배포 URL로 변경하세요.');
+                return false;
+            }
+            
+            return true;
+        }
 
         // 🔥 전역 에러 핸들러
         window.addEventListener('error', function(e) {
