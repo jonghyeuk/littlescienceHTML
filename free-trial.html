@@ -542,27 +542,76 @@
             document.getElementById('resultMessage').style.display = 'none';
             
             try {
-                // 🔥 IP 수집을 먼저 완료하고 기다림
-                console.log('🔍 IP 주소 수집 중...');
-                let userIP = 'unknown';
+                // 🔥 더 강력한 IP 수집 (여러 방법 시도)
+                console.log('🔍 IP 주소 수집 시작...');
+                let userIP = 'ip_collection_failed';
                 
                 try {
-                    const ipResponse = await fetch('https://api.ipify.org?format=json', {
-                        timeout: 5000  // 5초 타임아웃
-                    });
-                    
-                    if (ipResponse.ok) {
-                        const ipData = await ipResponse.json();
-                        userIP = ipData.ip || 'unknown';
-                        console.log('✅ IP 수집 완료:', userIP);
-                    } else {
-                        console.log('❌ IP API 응답 실패');
-                        userIP = 'api_failed';
+                    // 방법 1: ipify.org (메인)
+                    try {
+                        console.log('📡 ipify.org 시도중...');
+                        const ipResponse1 = await fetch('https://api.ipify.org?format=json', {
+                            method: 'GET',
+                            headers: { 'Accept': 'application/json' }
+                        });
+                        
+                        if (ipResponse1.ok) {
+                            const ipData1 = await ipResponse1.json();
+                            if (ipData1.ip) {
+                                userIP = ipData1.ip;
+                                console.log('✅ ipify.org 성공:', userIP);
+                            }
+                        }
+                    } catch (e1) {
+                        console.log('❌ ipify.org 실패:', e1.message);
                     }
+                    
+                    // 방법 2: ip-api.com (백업)
+                    if (userIP === 'ip_collection_failed') {
+                        try {
+                            console.log('📡 ip-api.com 시도중...');
+                            const ipResponse2 = await fetch('http://ip-api.com/json/', {
+                                method: 'GET'
+                            });
+                            
+                            if (ipResponse2.ok) {
+                                const ipData2 = await ipResponse2.json();
+                                if (ipData2.query) {
+                                    userIP = ipData2.query;
+                                    console.log('✅ ip-api.com 성공:', userIP);
+                                }
+                            }
+                        } catch (e2) {
+                            console.log('❌ ip-api.com 실패:', e2.message);
+                        }
+                    }
+                    
+                    // 방법 3: httpbin.org (최후 수단)
+                    if (userIP === 'ip_collection_failed') {
+                        try {
+                            console.log('📡 httpbin.org 시도중...');
+                            const ipResponse3 = await fetch('https://httpbin.org/ip', {
+                                method: 'GET'
+                            });
+                            
+                            if (ipResponse3.ok) {
+                                const ipData3 = await ipResponse3.json();
+                                if (ipData3.origin) {
+                                    userIP = ipData3.origin.split(',')[0].trim(); // 첫 번째 IP만
+                                    console.log('✅ httpbin.org 성공:', userIP);
+                                }
+                            }
+                        } catch (e3) {
+                            console.log('❌ httpbin.org 실패:', e3.message);
+                        }
+                    }
+                    
                 } catch (ipError) {
-                    console.log('❌ IP 수집 실패:', ipError);
-                    userIP = 'fetch_failed';
+                    console.log('💥 전체 IP 수집 실패:', ipError);
+                    userIP = 'all_methods_failed';
                 }
+                
+                console.log('🌐 최종 수집된 IP:', userIP);
                 
                 // 🔥 IP 수집 완료 후 form 전송
                 console.log('📤 최종 IP로 form 전송:', userIP);
