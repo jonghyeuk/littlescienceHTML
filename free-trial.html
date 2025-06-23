@@ -525,6 +525,16 @@
         // 🔥 iframe POST 방식 - CORS 완전 우회 (가장 간단하고 확실함)
         <script>
         // 🔥 Popup Window 방식 - X-Frame-Options 완전 우회
+        // postMessage 리스너 등록
+        window.addEventListener('message', function(event) {
+            console.log('📨 postMessage 수신:', event.data);
+            
+            if (event.data && event.data.type === 'FREE_TRIAL_RESULT') {
+                handlePostMessageResult(event.data);
+            }
+        });
+        
+        // 🔥 Popup Window 방식 - X-Frame-Options 완전 우회
         async function handleFormSubmit(event) {
             event.preventDefault();
             
@@ -542,7 +552,7 @@
             btn.innerHTML = '⏳';
             
             try {
-                // 🔥 실제 IP 주소 가져오기
+                // IP 주소 가져오기
                 let userIP = 'unknown';
                 try {
                     const ipResponse = await fetch('https://api.ipify.org?format=json');
@@ -556,50 +566,15 @@
                 
                 console.log('🔥 Popup Window 방식 요청 전송 중...');
                 
-                // 🔥 postMessage 이벤트 리스너 등록
-                const messageHandler = function(event) {
-                    console.log('📨 Popup postMessage 수신:', event.data);
-                    
-                    if (event.data && event.data.type === 'FREE_TRIAL_RESULT') {
-                        // 이벤트 리스너 제거
-                        window.removeEventListener('message', messageHandler);
-                        
-                        // 결과 처리
-                        handlePostMessageResult(event.data);
-                    }
-                };
-                
-                window.addEventListener('message', messageHandler);
-                
-                // 🔥 Popup Window 방식으로 요청
-                await sendPopupRequest({
+                // URL 파라미터 생성
+                const params = new URLSearchParams({
                     action: 'free_trial',
                     userEmail: email,
                     userIP: userIP,
                     deviceFingerprint: generateDeviceFingerprint()
-                }, messageHandler);
+                });
                 
-            } catch (error) {
-                console.error('요청 오류:', error);
-                btn.className = 'send-btn error';
-                btn.innerHTML = '❌';
-                showErrorModal('요청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-                
-                // 3초 후 버튼 리셋
-                setTimeout(() => {
-                    resetButton();
-                }, 3000);
-            }
-        }
-        
-        // 🔥 Popup Window 기반 요청 (X-Frame-Options 우회)
-        function sendPopupRequest(params, messageHandler) {
-            return new Promise((resolve, reject) => {
-                console.log('🔥 Popup 창 생성 중...');
-                
-                // URL 파라미터 생성
-                const formParams = new URLSearchParams(params).toString();
-                const popupUrl = `https://script.google.com/macros/s/AKfycbxk2od85OXtH8n1eKmsnKABkzwvx6u_S1IEoTI4-Ru69Iwr-PswaCQhFXALGGWyVdJVrg/exec?${formParams}`;
+                const popupUrl = `https://script.google.com/macros/s/AKfycbxk2od85OXtH8n1eKmsnKABkzwvx6u_S1IEoTI4-Ru69Iwr-PswaCQhFXALGGWyVdJVrg/exec?${params}`;
                 
                 console.log('🔗 Popup URL:', popupUrl);
                 
@@ -607,70 +582,43 @@
                 const popup = window.open(
                     popupUrl,
                     'freeTrialPopup',
-                    'width=500,height=400,scrollbars=yes,resizable=yes,status=no,location=no,toolbar=no,menubar=no'
+                    'width=500,height=400,scrollbars=yes,resizable=yes'
                 );
                 
                 if (!popup) {
                     console.error('❌ Popup이 차단되었습니다');
-                    window.removeEventListener('message', messageHandler);
-                    
-                    const btn = document.getElementById('sendBtn');
                     btn.className = 'send-btn error';
                     btn.innerHTML = '❌';
                     showErrorModal('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.');
-                    
-                    setTimeout(() => {
-                        resetButton();
-                    }, 3000);
-                    
-                    reject(new Error('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.'));
+                    setTimeout(() => resetButton(), 3000);
                     return;
                 }
                 
                 console.log('✅ Popup 창 열림');
                 
-                // Popup 닫힘 체크
-                const checkClosed = setInterval(() => {
-                    if (popup.closed) {
-                        console.log('🔄 Popup 창이 닫혔습니다');
-                        clearInterval(checkClosed);
-                        clearTimeout(timeoutId);
-                        
-                        // 메시지를 받지 못했다면 정리
-                        setTimeout(() => {
-                            window.removeEventListener('message', messageHandler);
-                        }, 1000);
-                    }
-                }, 1000);
-                
                 // 타임아웃 설정 (30초)
-                const timeoutId = setTimeout(() => {
-                    console.log('⏰ Popup 타임아웃');
-                    clearInterval(checkClosed);
-                    window.removeEventListener('message', messageHandler);
-                    
+                setTimeout(() => {
                     if (!popup.closed) {
+                        console.log('⏰ Popup 타임아웃');
                         popup.close();
+                        
+                        btn.className = 'send-btn error';
+                        btn.innerHTML = '❌';
+                        showErrorModal('요청 처리 시간이 초과되었습니다. 다시 시도해주세요.');
+                        setTimeout(() => resetButton(), 3000);
                     }
-                    
-                    // 타임아웃 시 에러 처리
-                    const btn = document.getElementById('sendBtn');
-                    btn.className = 'send-btn error';
-                    btn.innerHTML = '❌';
-                    showErrorModal('요청 처리 시간이 초과되었습니다. 다시 시도해주세요.');
-                    
-                    setTimeout(() => {
-                        resetButton();
-                    }, 3000);
-                    
-                    reject(new Error('타임아웃'));
                 }, 30000);
                 
-                resolve('Popup 요청 전송됨');
-            });
+            } catch (error) {
+                console.error('요청 오류:', error);
+                btn.className = 'send-btn error';
+                btn.innerHTML = '❌';
+                showErrorModal('요청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+                setTimeout(() => resetButton(), 3000);
+            }
         }
         
-        // 🔥 postMessage 결과 처리
+        // postMessage 결과 처리
         function handlePostMessageResult(data) {
             console.log('📊 Popup postMessage 결과 처리:', data);
             
@@ -707,10 +655,7 @@
                     break;
             }
             
-            // 3초 후 버튼 리셋
-            setTimeout(() => {
-                resetButton();
-            }, 3000);
+            setTimeout(() => resetButton(), 3000);
         }
         
         // 🔥 성공 모달 표시
@@ -804,7 +749,7 @@
             }
         });
         
-        // 브라우저 핑거프린팅 생성 (간단한 버전)
+        // 브라우저 핑거프린팅 생성
         function generateDeviceFingerprint() {
             try {
                 const fingerprint = [
@@ -863,6 +808,7 @@
                 btn.style.transform = 'scale(1)';
             }
         });
-    </script>
+        
+        console.log('✅ Popup 방식 스크립트 로드 완료');
 </body>
 </html>
