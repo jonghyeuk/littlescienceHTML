@@ -522,7 +522,7 @@
     </div>
 
     <script>
-        // 🔥 수정된 폼 제출 처리 - JSON 응답 파싱으로 변경
+        // 🔥 수정된 폼 제출 처리 - 더 안전한 응답 처리
         async function handleFormSubmit(event) {
             event.preventDefault();
             
@@ -559,16 +559,51 @@
                 formData.append('userIP', userIP);
                 formData.append('deviceFingerprint', generateDeviceFingerprint());
                 
+                console.log('요청 전송 중...');
+                
                 const response = await fetch('https://script.google.com/macros/s/AKfycbxk2od85OXtH8n1eKmsnKABkzwvx6u_S1IEoTI4-Ru69Iwr-PswaCQhFXALGGWyVdJVrg/exec', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    mode: 'cors'
                 });
                 
-                // 🔥 JSON 응답 파싱
-                const result = await response.json();
-                console.log('서버 응답:', result);
+                console.log('응답 상태:', response.status, response.statusText);
                 
-                // 🔥 응답에서 성공/실패 판단
+                // 🔥 응답을 텍스트로 먼저 받아서 확인
+                const responseText = await response.text();
+                console.log('원본 응답:', responseText);
+                
+                // 🔥 JSON 파싱 시도
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                    console.log('파싱된 JSON:', result);
+                } catch (parseError) {
+                    console.error('JSON 파싱 실패:', parseError);
+                    console.log('응답 내용:', responseText);
+                    
+                    // JSON이 아닌 경우 텍스트 기반으로 판단
+                    if (responseText.includes('SUCCESS_EMAIL_SENT') || responseText.includes('무료체험 처리 완료')) {
+                        btn.className = 'send-btn success';
+                        btn.innerHTML = '✅';
+                        showSuccessModal(email);
+                        return;
+                    } else if (responseText.includes('DUPLICATE_USER') || responseText.includes('중복')) {
+                        btn.className = 'send-btn error';
+                        btn.innerHTML = '❌';
+                        showDuplicateModal();
+                        return;
+                    } else if (responseText.includes('STOCK_OUT') || responseText.includes('재고')) {
+                        btn.className = 'send-btn error'; 
+                        btn.innerHTML = '❌';
+                        showStockOutModal();
+                        return;
+                    } else {
+                        throw new Error('JSON 파싱 실패 및 알 수 없는 응답');
+                    }
+                }
+                
+                // 🔥 JSON 응답 처리
                 if (result.success) {
                     btn.className = 'send-btn success';
                     btn.innerHTML = '✅';
@@ -595,7 +630,6 @@
                 btn.className = 'send-btn error';
                 btn.innerHTML = '❌';
                 showErrorModal('요청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-                resetButton();
             }
             
             // 3초 후 버튼 리셋
