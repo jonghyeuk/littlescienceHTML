@@ -522,16 +522,9 @@
     </div>
 
     <script>
-        // postMessage 리스너 등록
-        window.addEventListener('message', function(event) {
-            console.log('📨 postMessage 수신:', event.data);
-            
-            if (event.data && event.data.type === 'FREE_TRIAL_RESULT') {
-                handlePostMessageResult(event.data);
-            }
-        });
+        // 🔥 구매 방식 적용 - postMessage 대신 새 창에서 직접 결과 표시
         
-        // 폼 제출 처리
+        // 폼 제출 처리 (구매 방식 적용)
         async function handleFormSubmit(event) {
             event.preventDefault();
             
@@ -561,50 +554,66 @@
                     userIP = 'unknown';
                 }
                 
-                console.log('🔥 Popup Window 방식 요청 전송 중...');
+                console.log('🔥 구매 방식으로 POST 요청 전송 중...');
                 
-                // URL 파라미터 생성
-                const params = new URLSearchParams({
+                // 🔥 구매 페이지처럼 숨겨진 form 생성
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'https://script.google.com/macros/s/AKfycbxk2od85OXtH8n1eKmsnKABkzwvx6u_S1IEoTI4-Ru69Iwr-PswaCQhFXALGGWyVdJVrg/exec';
+                form.target = '_blank';  // 새 창에서 처리
+                form.style.display = 'none';
+                
+                // 데이터 추가
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'free_trial';
+                form.appendChild(actionInput);
+                
+                const emailInput = document.createElement('input');
+                emailInput.type = 'hidden';
+                emailInput.name = 'userEmail';
+                emailInput.value = email;
+                form.appendChild(emailInput);
+                
+                const ipInput = document.createElement('input');
+                ipInput.type = 'hidden';
+                ipInput.name = 'userIP';
+                ipInput.value = userIP;
+                form.appendChild(ipInput);
+                
+                const fingerprintInput = document.createElement('input');
+                fingerprintInput.type = 'hidden';
+                fingerprintInput.name = 'deviceFingerprint';
+                fingerprintInput.value = generateDeviceFingerprint();
+                form.appendChild(fingerprintInput);
+                
+                document.body.appendChild(form);
+                
+                console.log('📋 Form 데이터:', {
                     action: 'free_trial',
                     userEmail: email,
                     userIP: userIP,
                     deviceFingerprint: generateDeviceFingerprint()
                 });
                 
-                const popupUrl = `https://script.google.com/macros/s/AKfycbxk2od85OXtH8n1eKmsnKABkzwvx6u_S1IEoTI4-Ru69Iwr-PswaCQhFXALGGWyVdJVrg/exec?${params}`;
+                // Form 전송
+                form.submit();
                 
-                console.log('🔗 Popup URL:', popupUrl);
-                
-                // 팝업 창 열기
-                const popup = window.open(
-                    popupUrl,
-                    'freeTrialPopup',
-                    'width=500,height=400,scrollbars=yes,resizable=yes'
-                );
-                
-                if (!popup) {
-                    console.error('❌ Popup이 차단되었습니다');
-                    btn.className = 'send-btn error';
-                    btn.innerHTML = '❌';
-                    showErrorModal('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.');
-                    setTimeout(() => resetButton(), 3000);
-                    return;
-                }
-                
-                console.log('✅ Popup 창 열림');
-                
-                // 타임아웃 설정 (30초)
+                // 성공 표시 (새 창에서 결과 확인 가능)
                 setTimeout(() => {
-                    if (!popup.closed) {
-                        console.log('⏰ Popup 타임아웃');
-                        popup.close();
-                        
-                        btn.className = 'send-btn error';
-                        btn.innerHTML = '❌';
-                        showErrorModal('요청 처리 시간이 초과되었습니다. 다시 시도해주세요.');
-                        setTimeout(() => resetButton(), 3000);
-                    }
-                }, 30000);
+                    btn.className = 'send-btn success';
+                    btn.innerHTML = '✅';
+                    
+                    // 안내 모달 표시
+                    showProcessingModal(email);
+                    
+                    // Form 정리
+                    document.body.removeChild(form);
+                    
+                    // 버튼 리셋
+                    setTimeout(() => resetButton(), 3000);
+                }, 500);
                 
             } catch (error) {
                 console.error('요청 오류:', error);
@@ -615,47 +624,24 @@
             }
         }
         
-        // postMessage 결과 처리
-        function handlePostMessageResult(data) {
-            console.log('📊 Popup postMessage 결과 처리:', data);
+        // 처리 중 모달 표시 (구매 방식)
+        function showProcessingModal(email) {
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <h2>🔄 무료체험 신청 처리 중</h2>
+                <div class="code">새 창에서 결과를 확인하세요!</div>
+                <p><strong>${email}</strong>로 무료체험을 신청했습니다.</p>
+                <div style="background: #F1F8E9; border: 2px solid #4CAF50; border-radius: 10px; padding: 15px; margin: 20px 0; font-size: 14px; text-align: left;">
+                    <strong>📌 확인 방법:</strong><br>
+                    <div style="margin: 8px 0; padding-left: 20px;">1️⃣ 새로 열린 창에서 결과 확인</div>
+                    <div style="margin: 8px 0; padding-left: 20px;">2️⃣ 성공 시 이메일 발송됨</div>
+                    <div style="margin: 8px 0; padding-left: 20px;">3️⃣ 중복/재고부족 시 안내 표시</div>
+                </div>
+                <p><small>💡 새 창에서 상세 결과를 확인해주세요!</small></p>
+            `;
             
-            const btn = document.getElementById('sendBtn');
-            
-            switch (data.status) {
-                case 'SUCCESS':
-                    console.log('✅ 성공 처리');
-                    btn.className = 'send-btn success';
-                    btn.innerHTML = '✅';
-                    showSuccessModal(data.email);
-                    break;
-                    
-                case 'DUPLICATE':
-                    console.log('⚠️ 중복 처리');
-                    btn.className = 'send-btn error';
-                    btn.innerHTML = '❌';
-                    showDuplicateModal();
-                    break;
-                    
-                case 'STOCK_OUT':
-                    console.log('📦 재고부족 처리');
-                    btn.className = 'send-btn error';
-                    btn.innerHTML = '❌';
-                    showStockOutModal();
-                    break;
-                    
-                case 'ERROR':
-                default:
-                    console.log('❌ 에러 처리');
-                    btn.className = 'send-btn error';
-                    btn.innerHTML = '❌';
-                    showErrorModal(data.message || '요청 처리 중 오류가 발생했습니다.');
-                    break;
-            }
-            
-            setTimeout(() => resetButton(), 3000);
+            document.getElementById('resultModal').style.display = 'block';
         }
-        
-        // 성공 모달 표시
         function showSuccessModal(email) {
             const modalBody = document.getElementById('modalBody');
             modalBody.innerHTML = `
@@ -675,7 +661,7 @@
             document.getElementById('resultModal').style.display = 'block';
         }
         
-        // 중복 사용자 모달 표시
+        // 중복 사용자 모달 표시 (현재 미사용 - 새 창에서 처리)
         function showDuplicateModal() {
             const modalBody = document.getElementById('modalBody');
             modalBody.innerHTML = `
@@ -694,7 +680,7 @@
             document.getElementById('resultModal').style.display = 'block';
         }
         
-        // 재고 부족 모달 표시
+        // 재고 부족 모달 표시 (현재 미사용 - 새 창에서 처리)
         function showStockOutModal() {
             const modalBody = document.getElementById('modalBody');
             modalBody.innerHTML = `
@@ -806,7 +792,7 @@
             }
         });
         
-        console.log('✅ 수정된 무료체험 페이지 로드 완료');
+        console.log('✅ 구매 방식 적용된 무료체험 페이지 로드 완료');
     </script>
 </body>
 </html>
