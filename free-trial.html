@@ -310,7 +310,7 @@
             transform: translateY(-2px);
         }
 
-        /* 모달 스타일 추가 */
+        /* 모달 스타일 */
         .modal {
             display: none;
             position: fixed;
@@ -511,7 +511,7 @@
         </div>
     </div>
 
-    <!-- 🔥 모달 추가 -->
+    <!-- 모달 -->
     <div id="resultModal" class="modal">
         <div class="modal-content">
             <div id="modalBody">
@@ -522,9 +522,6 @@
     </div>
 
     <script>
-        // 🔥 iframe POST 방식 - CORS 완전 우회 (가장 간단하고 확실함)
-        <script>
-        // 🔥 Popup Window 방식 - X-Frame-Options 완전 우회
         // postMessage 리스너 등록
         window.addEventListener('message', function(event) {
             console.log('📨 postMessage 수신:', event.data);
@@ -534,7 +531,7 @@
             }
         });
         
-        // 🔥 Popup Window 방식 - X-Frame-Options 완전 우회
+        // 폼 제출 처리
         async function handleFormSubmit(event) {
             event.preventDefault();
             
@@ -578,7 +575,7 @@
                 
                 console.log('🔗 Popup URL:', popupUrl);
                 
-                // 작은 popup 창 열기
+                // 팝업 창 열기
                 const popup = window.open(
                     popupUrl,
                     'freeTrialPopup',
@@ -658,7 +655,7 @@
             setTimeout(() => resetButton(), 3000);
         }
         
-        // 🔥 성공 모달 표시
+        // 성공 모달 표시
         function showSuccessModal(email) {
             const modalBody = document.getElementById('modalBody');
             modalBody.innerHTML = `
@@ -678,7 +675,7 @@
             document.getElementById('resultModal').style.display = 'block';
         }
         
-        // 🔥 중복 사용자 모달 표시
+        // 중복 사용자 모달 표시
         function showDuplicateModal() {
             const modalBody = document.getElementById('modalBody');
             modalBody.innerHTML = `
@@ -697,7 +694,7 @@
             document.getElementById('resultModal').style.display = 'block';
         }
         
-        // 🔥 재고 부족 모달 표시
+        // 재고 부족 모달 표시
         function showStockOutModal() {
             const modalBody = document.getElementById('modalBody');
             modalBody.innerHTML = `
@@ -716,7 +713,7 @@
             document.getElementById('resultModal').style.display = 'block';
         }
         
-        // 🔥 에러 모달 표시
+        // 에러 모달 표시
         function showErrorModal(message) {
             const modalBody = document.getElementById('modalBody');
             modalBody.innerHTML = `
@@ -730,7 +727,7 @@
             document.getElementById('resultModal').style.display = 'block';
         }
         
-        // 🔥 모달 닫기
+        // 모달 닫기
         function closeModal() {
             document.getElementById('resultModal').style.display = 'none';
         }
@@ -809,6 +806,7 @@
             }
         });
         
-        console.log('✅ Popup 방식 스크립트 로드 완료');
+        console.log('✅ 수정된 무료체험 페이지 로드 완료');
+    </script>
 </body>
 </html>
