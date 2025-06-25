@@ -247,6 +247,30 @@
             text-align: center;
         }
 
+        /* 성공 메시지 */
+        .success-message {
+            background: #e8f5e8;
+            border: 2px solid #28a745;
+            color: #28a745;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: none;
+            text-align: center;
+        }
+
+        /* 주의 메시지 */
+        .warning-message {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: none;
+            text-align: center;
+        }
+
         /* 모바일 반응형 */
         @media (max-width: 768px) {
             body {
@@ -321,6 +345,18 @@
             <strong>⚠️ 결제 오류</strong><br>
             <span id="errorText"></span>
         </div>
+
+        <!-- 성공 메시지 -->
+        <div class="success-message" id="successMessage">
+            <strong>✅ 결제 요청 완료</strong><br>
+            <span id="successText"></span>
+        </div>
+
+        <!-- 주의 메시지 -->
+        <div class="warning-message" id="warningMessage">
+            <strong>⚠️ 중요 안내</strong><br>
+            <span id="warningText"></span>
+        </div>
         
         <form id="purchaseForm">
             <div class="license-options">
@@ -374,26 +410,36 @@
                 <li>PayApp을 통한 안전한 결제 시스템</li>
                 <li>SSL 보안 인증서로 개인정보 보호</li>
                 <li>결제 완료 후 즉시 이용권 발급</li>
+                <li>⚠️ <strong>결제 버튼은 한 번만 클릭해주세요</strong></li>
                 <li>문의: 카카오톡 채널 '리틀사이언스AI'</li>
             </ul>
         </div>
     </div>
 
     <script>
-        // ✅ PayApp 기본 설정 (보안: linkkey는 백엔드에서만 사용)
-        const PAYAPP_USERID = 'kstore101';  // 판매자 관리 사이트에서 확인
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxPuu-kwmgllBA--6ORIIgZZ52K3D4dpybzDDmugZnn9sbbHq3_qwfgYz8J411QXIN/exec';
+        // ✅ PayApp 기본 설정
+        const PAYAPP_USERID = 'kstore101';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxRr9cusbCPNvMogBrMuzU6ot5DedLU4i8jqiX8H6zO6IVcmzkx7Bi-8gjZyvDoZFj7/exec';
         
         let selectedLicense = null;
         let selectedPrice = 0;
         let selectedDescription = '';
-        let paymentInProgress = false; // 중복 결제 방지
+        let paymentInProgress = false;
+        let lastOrderNumber = null;
+        let paymentAttempts = 0; // 결제 시도 횟수 추적
+        let sessionId = 'SESSION_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); // 고유 세션 ID
         
         // PayApp 기본 설정
         PayApp.setDefault('userid', PAYAPP_USERID);
         PayApp.setDefault('shopname', 'LittleScienceAI');
         
         function selectLicense(licenseType, price, description) {
+            // 결제 진행 중이면 선택 불가
+            if (paymentInProgress) {
+                showWarningMessage('결제 진행 중에는 이용권을 변경할 수 없습니다.');
+                return;
+            }
+            
             // 이전 선택 해제
             document.querySelectorAll('.license-option').forEach(option => {
                 option.classList.remove('selected');
@@ -418,8 +464,10 @@
             // 구매 버튼 활성화
             updatePurchaseButton();
             
-            // 에러 메시지 숨김
-            hideErrorMessage();
+            // 메시지 숨김
+            hideAllMessages();
+            
+            console.log('이용권 선택:', licenseType, price);
         }
         
         function updatePurchaseButton() {
@@ -432,22 +480,48 @@
                 btn.textContent = `${selectedLicense} 결제하기 (${selectedPrice.toLocaleString()}원)`;
             } else {
                 btn.disabled = true;
-                btn.textContent = paymentInProgress ? '결제 진행중...' : '이용권 선택 후 결제하기';
+                if (paymentInProgress) {
+                    btn.textContent = '결제 진행중... (잠시만 기다려주세요)';
+                } else {
+                    btn.textContent = '이용권 선택 후 결제하기';
+                }
             }
         }
         
         function showErrorMessage(message) {
+            hideAllMessages();
             const errorDiv = document.getElementById('errorMessage');
             const errorText = document.getElementById('errorText');
             errorText.textContent = message;
             errorDiv.style.display = 'block';
             
-            // 5초 후 자동 숨김
-            setTimeout(hideErrorMessage, 5000);
+            setTimeout(hideAllMessages, 8000);
+        }
+
+        function showSuccessMessage(message) {
+            hideAllMessages();
+            const successDiv = document.getElementById('successMessage');
+            const successText = document.getElementById('successText');
+            successText.textContent = message;
+            successDiv.style.display = 'block';
+            
+            setTimeout(hideAllMessages, 5000);
+        }
+
+        function showWarningMessage(message) {
+            hideAllMessages();
+            const warningDiv = document.getElementById('warningMessage');
+            const warningText = document.getElementById('warningText');
+            warningText.textContent = message;
+            warningDiv.style.display = 'block';
+            
+            setTimeout(hideAllMessages, 6000);
         }
         
-        function hideErrorMessage() {
+        function hideAllMessages() {
             document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+            document.getElementById('warningMessage').style.display = 'none';
         }
         
         // 입력값 변경 시 버튼 업데이트
@@ -461,16 +535,29 @@
             e.target.value = value;
         });
         
-        // PayApp 결제 시작
+        // ✅ PayApp 결제 시작 (중복 방지 최대 강화)
         function startPayment() {
-            // 중복 결제 방지
+            console.log(`🚀 결제 시작 요청 (시도 횟수: ${paymentAttempts + 1})`);
+            
+            // ✅ 강력한 중복 결제 방지
             if (paymentInProgress) {
-                showErrorMessage('이미 결제가 진행중입니다. 잠시만 기다려주세요.');
+                showWarningMessage('이미 결제가 진행중입니다. 결제창을 확인해주세요.');
+                console.warn('⚠️ 중복 결제 시도 차단');
                 return;
             }
             
+            // ✅ 과도한 결제 시도 방지 (5회 제한)
+            paymentAttempts++;
+            if (paymentAttempts > 5) {
+                showErrorMessage('결제 시도 횟수를 초과했습니다. 페이지를 새로고침해주세요.');
+                console.error('❌ 과도한 결제 시도 차단');
+                return;
+            }
+            
+            // 기본 유효성 검사
             if (!selectedLicense) {
                 showErrorMessage('이용권을 선택해주세요.');
+                paymentAttempts--; // 유효성 검사 실패는 시도 횟수에서 제외
                 return;
             }
             
@@ -480,6 +567,7 @@
             if (!buyerEmail) {
                 showErrorMessage('이메일을 입력해주세요.');
                 document.getElementById('buyerEmail').focus();
+                paymentAttempts--;
                 return;
             }
             
@@ -488,90 +576,177 @@
             if (!emailRegex.test(buyerEmail)) {
                 showErrorMessage('올바른 이메일 형식을 입력해주세요.');
                 document.getElementById('buyerEmail').focus();
+                paymentAttempts--;
                 return;
             }
             
             if (!buyerPhone || buyerPhone.length < 10) {
                 showErrorMessage('올바른 휴대전화번호를 입력해주세요.');
                 document.getElementById('buyerPhone').focus();
+                paymentAttempts--;
                 return;
             }
             
-            // 결제 진행 상태로 변경
+            // ✅ 결제 진행 상태로 변경 (모든 유효성 검사 통과 후)
             paymentInProgress = true;
             updatePurchaseButton();
             
             // 로딩 표시
             document.getElementById('loading').style.display = 'block';
             
-            // 주문번호 생성 (타임스탬프 기반)
-            const orderNumber = 'LSA' + Date.now();
+            // ✅ 고유 주문번호 생성 (세션 ID + 타임스탬프 + 시도 횟수)
+            const orderNumber = `LSA${Date.now()}_${sessionId.split('_')[1]}_${paymentAttempts}`;
+            lastOrderNumber = orderNumber;
             
-            // PayApp 결제 파라미터 설정
-            PayApp.setParam('goodname', `LittleScienceAI ${selectedLicense}`);
-            PayApp.setParam('price', selectedPrice.toString());
-            PayApp.setParam('recvphone', buyerPhone);
-            PayApp.setParam('memo', `${selectedDescription} - ${buyerEmail}`);
-            
-            // 결제 완료 후 처리를 위한 URL들
-            PayApp.setParam('feedbackurl', `${GOOGLE_SCRIPT_URL}?action=paymentCallback`);
-            PayApp.setParam('returnurl', `${GOOGLE_SCRIPT_URL}?action=paymentComplete&email=${encodeURIComponent(buyerEmail)}&license=${encodeURIComponent(selectedLicense)}`);
-            
-            // 주문 정보를 var1, var2에 저장
-            PayApp.setParam('var1', orderNumber);
-            PayApp.setParam('var2', JSON.stringify({
-                email: buyerEmail,
+            console.log('📋 결제 정보:', {
+                orderNumber: orderNumber,
+                sessionId: sessionId,
+                attempt: paymentAttempts,
                 license: selectedLicense,
-                price: selectedPrice
-            }));
+                price: selectedPrice,
+                email: buyerEmail,
+                phone: buyerPhone
+            });
             
-            // ⭐ 파이널 버전 핵심 설정 ⭐
-            PayApp.setParam('checkretry', 'n');      // 🚨 재시도 금지 (중복 방지)
-            PayApp.setParam('smsuse', 'n');          // SMS 발송 안함
-            PayApp.setParam('redirectpay', '1');     // 결제창으로 리다이렉트
-            PayApp.setParam('skip_cstpage', 'y');    // 매출전표 페이지 건너뛰기
-            PayApp.setParam('openpaytype', 'card,phone,kakaopay,naverpay'); // 결제수단 제한
-            
-            // 실제 PayApp 결제 요청
+            // ✅ PayApp 파라미터 설정 (매뉴얼 기준 최적화)
             try {
-                console.log('PayApp 파라미터 확인:', {
+                PayApp.setParam('goodname', `LittleScienceAI ${selectedLicense}`);
+                PayApp.setParam('price', selectedPrice.toString());
+                PayApp.setParam('recvphone', buyerPhone);
+                PayApp.setParam('memo', `${selectedDescription} (주문: ${orderNumber})`);
+                
+                // ✅ 콜백 URL 설정
+                PayApp.setParam('feedbackurl', `${GOOGLE_SCRIPT_URL}?action=paymentCallback`);
+                PayApp.setParam('returnurl', `${GOOGLE_SCRIPT_URL}?action=paymentComplete&email=${encodeURIComponent(buyerEmail)}&license=${encodeURIComponent(selectedLicense)}`);
+                
+                // ✅ 주문 정보 저장
+                PayApp.setParam('var1', orderNumber);
+                PayApp.setParam('var2', JSON.stringify({
+                    email: buyerEmail,
+                    license: selectedLicense,
+                    price: selectedPrice,
+                    timestamp: Date.now(),
+                    sessionId: sessionId,
+                    attempt: paymentAttempts
+                }));
+                
+                // ✅ PayApp 매뉴얼 기준 중복 방지 설정
+                PayApp.setParam('checkretry', 'n');              // 🚨 재시도 절대 금지
+                PayApp.setParam('smsuse', 'n');                  // SMS 발송 안함
+                PayApp.setParam('redirectpay', '1');             // 결제창 리다이렉트
+                PayApp.setParam('skip_cstpage', 'y');            // 매출전표 페이지 건너뛰기
+                PayApp.setParam('openpaytype', 'card,phone,kakaopay,naverpay');
+                
+                // ✅ 추가 최적화 설정
+                PayApp.setParam('autoclose', '10');              // 10초 후 자동 닫기
+                PayApp.setParam('browsercheck', 'n');            // 브라우저 체크 생략
+                PayApp.setParam('confirmrepeat', 'n');           // 중복 확인 생략
+                PayApp.setParam('useescrow', 'n');               // 에스크로 사용 안함
+                PayApp.setParam('callbackenctype', '1');         // 콜백 인코딩
+                
+                console.log('⚙️ PayApp 설정 완료:', {
                     userid: PAYAPP_USERID,
                     goodname: `LittleScienceAI ${selectedLicense}`,
                     price: selectedPrice,
-                    recvphone: buyerPhone,
-                    checkretry: 'n' // 재시도 방지 확인
+                    orderNumber: orderNumber,
+                    checkretry: 'n',
+                    autoclose: '10'
                 });
                 
-                console.log('🚀 PayApp 결제 시작');
-                PayApp.call(); // 결제 요청
+                showSuccessMessage('PayApp 결제창으로 이동합니다. 잠시만 기다려주세요...');
+                
+                // ✅ PayApp 결제 호출
+                console.log('🚀 PayApp 결제 호출 (중복 방지 최대 강화)');
+                PayApp.call();
+                
+                // ✅ 결제창 타임아웃 설정 (15초)
+                setTimeout(function() {
+                    if (paymentInProgress) {
+                        console.log('⏰ 결제창 타임아웃 - 상태 초기화');
+                        resetPaymentState('결제창 응답 대기 중...');
+                    }
+                }, 15000);
                 
             } catch (error) {
-                console.error('PayApp 결제 요청 오류:', error);
+                console.error('💥 PayApp 호출 오류:', error);
                 showErrorMessage('결제 요청 중 오류가 발생했습니다. 다시 시도해주세요.');
                 resetPaymentState();
             }
         }
         
-        // 결제 상태 초기화
-        function resetPaymentState() {
+        // ✅ 결제 상태 초기화
+        function resetPaymentState(reason = '결제 상태 초기화') {
+            console.log(`🔄 ${reason}`);
             paymentInProgress = false;
             updatePurchaseButton();
             document.getElementById('loading').style.display = 'none';
         }
         
-        // 페이지 이탈 시 결제 상태 초기화
-        window.addEventListener('beforeunload', function() {
-            resetPaymentState();
+        // ✅ 페이지 이벤트 핸들러
+        window.addEventListener('beforeunload', function(e) {
+            if (paymentInProgress) {
+                e.preventDefault();
+                e.returnValue = '결제가 진행 중입니다. 페이지를 떠나시겠습니까?';
+                return e.returnValue;
+            }
         });
         
-        // 페이지 포커스 시 결제 상태 초기화 (결제창에서 돌아올 때)
+        // 페이지 포커스 시 결제 상태 확인
         window.addEventListener('focus', function() {
-            setTimeout(resetPaymentState, 1000); // 1초 후 초기화
+            console.log('🔍 페이지 포커스 - 결제 상태 확인');
+            
+            setTimeout(function() {
+                if (paymentInProgress) {
+                    console.log('⏰ 페이지 포커스 후 결제 상태 확인');
+                    resetPaymentState('페이지 포커스 후 초기화');
+                    showSuccessMessage('결제 처리를 확인 중입니다. 이메일을 확인해주세요.');
+                }
+            }, 3000);
         });
         
-        console.log('💳 PayApp 연동 구매 페이지 파이널 버전 로드 완료');
-        console.log('PayApp userid:', PAYAPP_USERID);
-        console.log('중복 방지 설정: checkretry = n');
+        // ✅ 페이지 로드 시 초기화
+        window.addEventListener('load', function() {
+            console.log('💳 PayApp 구매 페이지 로드 완료');
+            console.log('🔧 설정:', {
+                userid: PAYAPP_USERID,
+                sessionId: sessionId,
+                checkretry: 'n',
+                maxAttempts: 5
+            });
+            
+            resetPaymentState('페이지 로드 완료');
+            
+            // 세션 정보 로그
+            console.log(`🆔 세션 시작: ${sessionId}`);
+        });
+        
+        // ✅ 디버깅 함수들
+        function getPaymentStatus() {
+            return {
+                inProgress: paymentInProgress,
+                attempts: paymentAttempts,
+                lastOrder: lastOrderNumber,
+                sessionId: sessionId,
+                selectedLicense: selectedLicense,
+                selectedPrice: selectedPrice
+            };
+        }
+        
+        function resetPaymentAttempts() {
+            paymentAttempts = 0;
+            paymentInProgress = false;
+            sessionId = 'SESSION_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            updatePurchaseButton();
+            console.log('🔄 결제 시도 횟수 및 세션 초기화');
+            showSuccessMessage('결제 시도 횟수가 초기화되었습니다.');
+        }
+        
+        // ✅ 전역 함수로 디버깅 가능하게 설정
+        window.getPaymentStatus = getPaymentStatus;
+        window.resetPaymentAttempts = resetPaymentAttempts;
+        
+        console.log('💳 PayApp 연동 구매 페이지 최종 버전 로드 완료');
+        console.log('🛡️ 중복 방지 설정: checkretry=n, 최대시도=5회, 세션추적=활성');
     </script>
 </body>
 </html>
