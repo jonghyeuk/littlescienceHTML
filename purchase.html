@@ -15,15 +15,16 @@
             box-sizing: border-box;
         }
         
+        html {
+            scroll-behavior: smooth;
+        }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            padding: 20px 0;
             position: relative;
-            overflow: hidden;
         }
 
         /* 배경 애니메이션 풍선 효과 */
@@ -51,12 +52,13 @@
             box-shadow: 0 15px 35px rgba(0,0,0,0.1);
             max-width: 500px;
             width: 90%;
+            margin: 0 auto;
             position: relative;
             z-index: 1;
             border: 1px solid rgba(255,255,255,0.2);
         }
 
-        /* 실제 결제 배지 */
+        /* 안전결제 배지 */
         .payment-badge {
             position: absolute;
             top: -15px;
@@ -219,7 +221,7 @@
             background: #f8f9fa;
             border-left: 4px solid #667eea;
             padding: 15px;
-            margin: 20px 0;
+            margin: 20px 0 40px 0;
         }
 
         .security-info h4 {
@@ -233,12 +235,29 @@
             margin-left: 20px;
         }
 
+        /* 에러 메시지 */
+        .error-message {
+            background: #ffe6e6;
+            border: 2px solid #e74c3c;
+            color: #e74c3c;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: none;
+            text-align: center;
+        }
+
         /* 모바일 반응형 */
         @media (max-width: 768px) {
+            body {
+                padding: 10px 0;
+            }
+            
             .container {
                 padding: 30px 25px;
-                margin: 20px;
-                width: calc(100% - 40px);
+                margin: 10px auto;
+                width: calc(100% - 20px);
+                min-height: auto;
             }
 
             .payment-badge {
@@ -246,6 +265,37 @@
                 right: 20px;
                 padding: 8px 20px;
                 font-size: 12px;
+            }
+            
+            .license-option {
+                margin: 10px 0;
+                padding: 15px;
+            }
+            
+            .license-title {
+                font-size: 18px;
+            }
+            
+            .license-price {
+                font-size: 20px;
+            }
+        }
+
+        /* 매우 작은 화면 대응 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px 15px;
+                margin: 5px auto;
+                width: calc(100% - 10px);
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .purchase-btn {
+                font-size: 16px;
+                padding: 15px;
             }
         }
     </style>
@@ -264,6 +314,12 @@
             <h3>💳 PayApp 안전결제</h3>
             <p>신용카드, 휴대전화, 카카오페이, 네이버페이 등</p>
             <p>다양한 결제수단을 지원합니다</p>
+        </div>
+
+        <!-- 에러 메시지 -->
+        <div class="error-message" id="errorMessage">
+            <strong>⚠️ 결제 오류</strong><br>
+            <span id="errorText"></span>
         </div>
         
         <form id="purchaseForm">
@@ -326,11 +382,12 @@
     <script>
         // ✅ 실제 PayApp userid 설정 완료!
         const PAYAPP_USERID = 'kstore101';  // 판매자 관리 사이트에서 확인
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxZqjIb3eQ_0naDONeeOSX16aTjCIDiC6qi0MjBybrBVi1e5tElxL1WmrUiaHRpUEmO/exec';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxpYFANzbuv6pyKN8Eq_73zF0cLDLLrDCDxp74Vl6Sy8s_XeuwFgsE6218zVPJ9nuG/exec';
         
         let selectedLicense = null;
         let selectedPrice = 0;
         let selectedDescription = '';
+        let paymentInProgress = false; // 중복 결제 방지
         
         // PayApp 기본 설정
         PayApp.setDefault('userid', PAYAPP_USERID);
@@ -360,6 +417,9 @@
             
             // 구매 버튼 활성화
             updatePurchaseButton();
+            
+            // 에러 메시지 숨김
+            hideErrorMessage();
         }
         
         function updatePurchaseButton() {
@@ -367,13 +427,27 @@
             const email = document.getElementById('buyerEmail').value;
             const phone = document.getElementById('buyerPhone').value;
             
-            if (selectedLicense && email && phone) {
+            if (selectedLicense && email && phone && !paymentInProgress) {
                 btn.disabled = false;
                 btn.textContent = `${selectedLicense} 결제하기 (${selectedPrice.toLocaleString()}원)`;
             } else {
                 btn.disabled = true;
-                btn.textContent = '이용권 선택 후 결제하기';
+                btn.textContent = paymentInProgress ? '결제 진행중...' : '이용권 선택 후 결제하기';
             }
+        }
+        
+        function showErrorMessage(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            errorText.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            // 5초 후 자동 숨김
+            setTimeout(hideErrorMessage, 5000);
+        }
+        
+        function hideErrorMessage() {
+            document.getElementById('errorMessage').style.display = 'none';
         }
         
         // 입력값 변경 시 버튼 업데이트
@@ -389,29 +463,46 @@
         
         // PayApp 결제 시작
         function startPayment() {
-            if (!selectedLicense) {
-                alert('이용권을 선택해주세요.');
+            // 중복 결제 방지
+            if (paymentInProgress) {
+                showErrorMessage('이미 결제가 진행중입니다. 잠시만 기다려주세요.');
                 return;
             }
             
-            const buyerEmail = document.getElementById('buyerEmail').value;
-            const buyerPhone = document.getElementById('buyerPhone').value;
+            if (!selectedLicense) {
+                showErrorMessage('이용권을 선택해주세요.');
+                return;
+            }
+            
+            const buyerEmail = document.getElementById('buyerEmail').value.trim();
+            const buyerPhone = document.getElementById('buyerPhone').value.trim();
             
             if (!buyerEmail) {
-                alert('이메일을 입력해주세요.');
+                showErrorMessage('이메일을 입력해주세요.');
+                document.getElementById('buyerEmail').focus();
+                return;
+            }
+            
+            // 이메일 형식 검증
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(buyerEmail)) {
+                showErrorMessage('올바른 이메일 형식을 입력해주세요.');
                 document.getElementById('buyerEmail').focus();
                 return;
             }
             
             if (!buyerPhone || buyerPhone.length < 10) {
-                alert('올바른 휴대전화번호를 입력해주세요.');
+                showErrorMessage('올바른 휴대전화번호를 입력해주세요.');
                 document.getElementById('buyerPhone').focus();
                 return;
             }
             
+            // 결제 진행 상태로 변경
+            paymentInProgress = true;
+            updatePurchaseButton();
+            
             // 로딩 표시
             document.getElementById('loading').style.display = 'block';
-            document.getElementById('purchaseBtn').disabled = true;
             
             // 주문번호 생성 (타임스탬프 기반)
             const orderNumber = 'LSA' + Date.now();
@@ -434,11 +525,11 @@
                 price: selectedPrice
             }));
             
-            // 기타 설정
-            PayApp.setParam('checkretry', 'y');  // 재시도 허용
-            PayApp.setParam('smsuse', 'n');      // SMS 발송 안함
-            PayApp.setParam('redirectpay', '1');  // 결제창으로 리다이렉트
-            PayApp.setParam('skip_cstpage', 'y'); // 매출전표 페이지 건너뛰기
+            // ⭐ 파이널 버전 핵심 설정 ⭐
+            PayApp.setParam('checkretry', 'n');      // 🚨 재시도 금지 (중복 방지)
+            PayApp.setParam('smsuse', 'n');          // SMS 발송 안함
+            PayApp.setParam('redirectpay', '1');     // 결제창으로 리다이렉트
+            PayApp.setParam('skip_cstpage', 'y');    // 매출전표 페이지 건너뛰기
             PayApp.setParam('openpaytype', 'card,phone,kakaopay,naverpay'); // 결제수단 제한
             
             // 실제 PayApp 결제 요청
@@ -447,22 +538,40 @@
                     userid: PAYAPP_USERID,
                     goodname: `LittleScienceAI ${selectedLicense}`,
                     price: selectedPrice,
-                    recvphone: buyerPhone
+                    recvphone: buyerPhone,
+                    checkretry: 'n' // 재시도 방지 확인
                 });
                 
-                PayApp.call(); // payrequest() 대신 call() 사용
+                console.log('🚀 PayApp 결제 시작');
+                PayApp.call(); // 결제 요청
+                
             } catch (error) {
                 console.error('PayApp 결제 요청 오류:', error);
-                alert('결제 요청 중 오류가 발생했습니다. 다시 시도해주세요.');
-                
-                // 로딩 해제
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('purchaseBtn').disabled = false;
+                showErrorMessage('결제 요청 중 오류가 발생했습니다. 다시 시도해주세요.');
+                resetPaymentState();
             }
         }
         
-        console.log('💳 PayApp 연동 구매 페이지 로드 완료');
+        // 결제 상태 초기화
+        function resetPaymentState() {
+            paymentInProgress = false;
+            updatePurchaseButton();
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        // 페이지 이탈 시 결제 상태 초기화
+        window.addEventListener('beforeunload', function() {
+            resetPaymentState();
+        });
+        
+        // 페이지 포커스 시 결제 상태 초기화 (결제창에서 돌아올 때)
+        window.addEventListener('focus', function() {
+            setTimeout(resetPaymentState, 1000); // 1초 후 초기화
+        });
+        
+        console.log('💳 PayApp 연동 구매 페이지 파이널 버전 로드 완료');
         console.log('PayApp userid:', PAYAPP_USERID);
+        console.log('중복 방지 설정: checkretry = n');
     </script>
 </body>
 </html>
