@@ -382,7 +382,7 @@
     <script>
         // ✅ PayApp 기본 설정 (보안: linkkey는 백엔드에서만 사용)
         const PAYAPP_USERID = 'kstore101';  // 판매자 관리 사이트에서 확인
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyHrF9x04TgZ06W-W8tCgLlkIiYodtElgfatjCu7Q4ijPNLhCnMuOFf8maYWF1_-kbQ/exec';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWlzOtDWbrKrv_TYDHoXblFq1ZPqUVFoGXca6U4oP4bLYmQMsdXjU8AGikOb2wVO68/exec';
         
         let selectedLicense = null;
         let selectedPrice = 0;
@@ -461,7 +461,7 @@
             e.target.value = value;
         });
         
-        // PayApp 결제 시작
+        // ✅ PayApp 결제 시작 - 재접근 방지 수정 버전
         function startPayment() {
             // 중복 결제 방지
             if (paymentInProgress) {
@@ -513,9 +513,9 @@
             PayApp.setParam('recvphone', buyerPhone);
             PayApp.setParam('memo', `${selectedDescription} - ${buyerEmail}`);
             
-            // 결제 완료 후 처리를 위한 URL들
-            PayApp.setParam('feedbackurl', `${GOOGLE_SCRIPT_URL}?action=paymentCallback`);
-            PayApp.setParam('returnurl', `${GOOGLE_SCRIPT_URL}?action=paymentComplete&email=${encodeURIComponent(buyerEmail)}&license=${encodeURIComponent(selectedLicense)}`);
+            // ✅ 핵심 수정: URL 분리 (서버간 통신 vs 사용자 리다이렉트)
+            PayApp.setParam('feedbackurl', GOOGLE_SCRIPT_URL);  // 서버간 통신용 (콜백만)
+            PayApp.setParam('returnurl', `${GOOGLE_SCRIPT_URL}?action=paymentComplete&email=${encodeURIComponent(buyerEmail)}&license=${encodeURIComponent(selectedLicense)}`);  // 사용자 리다이렉트용
             
             // 주문 정보를 var1, var2에 저장
             PayApp.setParam('var1', orderNumber);
@@ -525,11 +525,14 @@
                 price: selectedPrice
             }));
             
-            // ⭐ 파이널 버전 핵심 설정 ⭐
-            PayApp.setParam('checkretry', 'n');      // 🚨 재시도 금지 (중복 방지)
-            PayApp.setParam('smsuse', 'n');          // SMS 발송 안함
-            PayApp.setParam('redirectpay', '1');     // 결제창으로 리다이렉트
-            PayApp.setParam('skip_cstpage', 'y');    // 매출전표 페이지 건너뛰기
+            // ✅ 재시도 방지 강화 설정
+            PayApp.setParam('checkretry', 'n');              // 재시도 금지 (중복 방지)
+            PayApp.setParam('feedbacktimeout', '30');        // 콜백 타임아웃 30초
+            PayApp.setParam('escrow', 'n');                  // 에스크로 사용 안함
+            PayApp.setParam('quota', '0');                   // 할부 없음
+            PayApp.setParam('smsuse', 'n');                  // SMS 발송 안함
+            PayApp.setParam('redirectpay', '1');             // 결제창으로 리다이렉트
+            PayApp.setParam('skip_cstpage', 'y');            // 매출전표 페이지 건너뛰기
             PayApp.setParam('openpaytype', 'card,phone,kakaopay,naverpay'); // 결제수단 제한
             
             // 실제 PayApp 결제 요청
@@ -539,10 +542,11 @@
                     goodname: `LittleScienceAI ${selectedLicense}`,
                     price: selectedPrice,
                     recvphone: buyerPhone,
-                    checkretry: 'n' // 재시도 방지 확인
+                    checkretry: 'n', // 재시도 방지 확인
+                    feedbacktimeout: '30' // 타임아웃 설정 확인
                 });
                 
-                console.log('🚀 PayApp 결제 시작');
+                console.log('🚀 PayApp 결제 시작 - 재접근 방지 설정 적용');
                 PayApp.call(); // 결제 요청
                 
             } catch (error) {
@@ -569,9 +573,9 @@
             setTimeout(resetPaymentState, 1000); // 1초 후 초기화
         });
         
-        console.log('💳 PayApp 연동 구매 페이지 파이널 버전 로드 완료');
+        console.log('💳 PayApp 연동 구매 페이지 재접근 방지 버전 로드 완료');
         console.log('PayApp userid:', PAYAPP_USERID);
-        console.log('중복 방지 설정: checkretry = n');
+        console.log('재접근 방지 설정: checkretry=n, feedbacktimeout=30, URL 분리');
     </script>
 </body>
 </html>
