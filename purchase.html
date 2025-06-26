@@ -511,13 +511,12 @@
             try {
                 console.log('🚀 PayApp 매뉴얼 표준 방식 - PayApp.payrequest()');
                 
-                // ✅ 매뉴얼 표준 파라미터 설정
-                PayApp.setParam('reqType', 'REMOTE');
-                PayApp.setParam('returnUri', `${GOOGLE_SCRIPT_URL}?action=paymentComplete&email=${encodeURIComponent(buyerEmail)}&license=${encodeURIComponent(selectedLicense)}`);
-                PayApp.setParam('phoneNumber', buyerPhone);
-                PayApp.setParam('goodName', `LittleScienceAI ${selectedLicense}`);
-                PayApp.setParam('goodPrice', selectedPrice.toString());
-                PayApp.setParam('hasTax', '0');
+                // ✅ 일반 웹 결제용 파라미터 설정 (reqType 제거)
+                PayApp.setParam('returnUrl', `${GOOGLE_SCRIPT_URL}?action=paymentComplete&email=${encodeURIComponent(buyerEmail)}&license=${encodeURIComponent(selectedLicense)}`);
+                PayApp.setParam('goodname', `LittleScienceAI ${selectedLicense}`);
+                PayApp.setParam('price', selectedPrice.toString());
+                PayApp.setParam('recvphone', buyerPhone);
+                PayApp.setParam('memo', `${selectedDescription} - ${buyerEmail}`);
                 PayApp.setParam('feedbackurl', GOOGLE_SCRIPT_URL);
                 PayApp.setParam('checkretry', 'n');
                 PayApp.setParam('var1', orderNumber);
@@ -529,12 +528,11 @@
                 }));
                 
                 console.log('PayApp 파라미터 설정 완료:', {
-                    reqType: 'REMOTE',
-                    goodName: `LittleScienceAI ${selectedLicense}`,
-                    goodPrice: selectedPrice,
-                    phoneNumber: buyerPhone,
-                    hasTax: '0',
-                    orderNumber: orderNumber
+                    goodname: `LittleScienceAI ${selectedLicense}`,
+                    price: selectedPrice,
+                    recvphone: buyerPhone,
+                    orderNumber: orderNumber,
+                    memo: `${selectedDescription} - ${buyerEmail}`
                 });
                 
                 // ✅ 매뉴얼 표준: PayApp.payrequest() 호출
