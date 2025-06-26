@@ -517,7 +517,7 @@
                 PayApp.setParam('price', selectedPrice.toString());
                 PayApp.setParam('recvphone', buyerPhone);
                 PayApp.setParam('memo', `${selectedDescription} - ${buyerEmail}`);
-                // PayApp.setParam('feedbackurl', GOOGLE_SCRIPT_URL);
+                PayApp.setParam('feedbackurl', GOOGLE_SCRIPT_URL);
                 PayApp.setParam('checkretry', 'n');
                 PayApp.setParam('var1', orderNumber);
                 PayApp.setParam('var2', JSON.stringify({
