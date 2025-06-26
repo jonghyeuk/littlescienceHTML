@@ -380,9 +380,9 @@
     </div>
 
     <script>
-        // ✅ PayApp 설정 - 매뉴얼 표준 준수
+        // ✅ PayApp 설정
         const PAYAPP_USERID = 'kstore101';
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyu_RjpTDUoSfd6AbH-eISxIx9PBPNwSM-uPTDQ6XncKSnk_QWxGbO_VAxisOlz-MmH/exec';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMzJeQTj9sicBx-Q8Ud_PSHW9Wn_1RzscYeToGWw2m2US5igozO3ICk8JB9O_JCcVQ/exec';
         
         let selectedLicense = null;
         let selectedPrice = 0;
@@ -461,7 +461,7 @@
             e.target.value = value;
         });
         
-        // ✅ PayApp 결제 시작 - 매뉴얼 표준 준수 버전
+        // ✅ PayApp 결제 시작 - 방식 변경 테스트
         function startPayment() {
             // 중복 결제 방지
             if (paymentInProgress) {
@@ -507,50 +507,81 @@
             // 주문번호 생성
             const orderNumber = 'LSA' + Date.now();
             
-            // ✅ PayApp 매뉴얼 표준 파라미터 설정
-            PayApp.setParam('reqType', 'REMOTE');                                    // 📋 매뉴얼 필수: 원격결제
-            PayApp.setParam('returnUri', `${GOOGLE_SCRIPT_URL}?action=paymentComplete&email=${encodeURIComponent(buyerEmail)}&license=${encodeURIComponent(selectedLicense)}`);
-            PayApp.setParam('phoneNumber', buyerPhone);                              // 📋 매뉴얼 표준: recvphone → phoneNumber
-            PayApp.setParam('goodName', `LittleScienceAI ${selectedLicense}`);       // 📋 매뉴얼 표준: goodname → goodName
-            PayApp.setParam('goodPrice', selectedPrice);                            // 📋 매뉴얼 표준: price → goodPrice
-            PayApp.setParam('hasTax', '0');                                         // 📋 매뉴얼 권장: 개인 고객 면세
-            
-            // ✅ 매뉴얼 표준 선택적 파라미터
-            PayApp.setParam('feedbackurl', GOOGLE_SCRIPT_URL);                      // 📋 매뉴얼: 결제완료 후 결과값 리턴
-            PayApp.setParam('checkretry', 'n');                                     // 📋 매뉴얼: feedbackurl 재시도 안함
-            PayApp.setParam('var1', orderNumber);                                   // 📋 매뉴얼: 임의 사용변수 1
-            PayApp.setParam('var2', JSON.stringify({                               // 📋 매뉴얼: 임의 사용변수 2
-                email: buyerEmail,
-                license: selectedLicense,
-                price: selectedPrice,
-                timestamp: new Date().toISOString()
-            }));
-            
-            // ✅ 기존 설정 중 매뉴얼에 있는 것들만 유지
-            PayApp.setParam('smsuse', 'n');                   // SMS 발송 안함
-            PayApp.setParam('redirectpay', '1');             // 결제창으로 리다이렉트
-            PayApp.setParam('skip_cstpage', 'y');            // 매출전표 페이지 건너뛰기
-            PayApp.setParam('openpaytype', 'card,phone,kakaopay,naverpay'); // 결제수단 제한
-            
-            // PayApp 호출
+            // ✅ PayApp 호출 방식 1: 직접 URL 이동 (WebToApp 방식)
             try {
-                console.log('🚀 PayApp 표준 매뉴얼 준수 결제 시작');
-                console.log('주요 파라미터:', {
+                console.log('🚀 PayApp 직접 URL 호출 방식 시도');
+                
+                const payappUrl = buildPayAppUrl({
                     reqType: 'REMOTE',
+                    returnUri: `${GOOGLE_SCRIPT_URL}?action=paymentComplete&email=${encodeURIComponent(buyerEmail)}&license=${encodeURIComponent(selectedLicense)}`,
+                    phoneNumber: buyerPhone,
                     goodName: `LittleScienceAI ${selectedLicense}`,
                     goodPrice: selectedPrice,
-                    phoneNumber: buyerPhone,
                     hasTax: '0',
-                    checkretry: 'n'
+                    feedbackurl: GOOGLE_SCRIPT_URL,
+                    checkretry: 'n',
+                    var1: orderNumber,
+                    var2: JSON.stringify({
+                        email: buyerEmail,
+                        license: selectedLicense,
+                        price: selectedPrice,
+                        timestamp: new Date().toISOString()
+                    })
                 });
                 
-                PayApp.call();
+                console.log('PayApp URL:', payappUrl);
+                
+                // 직접 이동
+                window.location.href = payappUrl;
                 
             } catch (error) {
-                console.error('PayApp 결제 요청 오류:', error);
-                showErrorMessage('결제 요청 중 오류가 발생했습니다. 다시 시도해주세요.');
-                resetPaymentState();
+                console.error('PayApp 직접 URL 호출 오류:', error);
+                
+                // ✅ 대안: 기존 PayApp.call() 방식
+                console.log('🔄 PayApp.call() 방식으로 재시도');
+                
+                try {
+                    // 기존 방식으로 재시도
+                    PayApp.setParam('reqType', 'REMOTE');
+                    PayApp.setParam('returnUri', `${GOOGLE_SCRIPT_URL}?action=paymentComplete&email=${encodeURIComponent(buyerEmail)}&license=${encodeURIComponent(selectedLicense)}`);
+                    PayApp.setParam('phoneNumber', buyerPhone);
+                    PayApp.setParam('goodName', `LittleScienceAI ${selectedLicense}`);
+                    PayApp.setParam('goodPrice', selectedPrice.toString());  // ✅ 문자열로 변환
+                    PayApp.setParam('hasTax', '0');
+                    PayApp.setParam('feedbackurl', GOOGLE_SCRIPT_URL);
+                    PayApp.setParam('checkretry', 'n');
+                    PayApp.setParam('var1', orderNumber);
+                    PayApp.setParam('var2', JSON.stringify({
+                        email: buyerEmail,
+                        license: selectedLicense,
+                        price: selectedPrice,
+                        timestamp: new Date().toISOString()
+                    }));
+                    
+                    console.log('PayApp 파라미터 재설정 완료');
+                    PayApp.call();
+                    
+                } catch (secondError) {
+                    console.error('PayApp.call() 재시도 실패:', secondError);
+                    showErrorMessage('결제 시스템 연결에 실패했습니다. 잠시 후 다시 시도해주세요.');
+                    resetPaymentState();
+                }
             }
+        }
+        
+        // ✅ PayApp URL 직접 구성 함수
+        function buildPayAppUrl(params) {
+            const baseUrl = 'https://payapp.kr/sdk-app';
+            const urlParams = new URLSearchParams();
+            
+            // 필수 파라미터들 추가
+            Object.keys(params).forEach(key => {
+                if (params[key] !== null && params[key] !== undefined) {
+                    urlParams.append(key, params[key]);
+                }
+            });
+            
+            return `${baseUrl}?${urlParams.toString()}`;
         }
         
         // 결제 상태 초기화
@@ -569,9 +600,9 @@
             setTimeout(resetPaymentState, 1000);
         });
         
-        console.log('💳 PayApp 매뉴얼 표준 준수 페이지 로드 완료');
+        console.log('💳 PayApp 수정된 호출 방식 페이지 로드 완료');
         console.log('PayApp userid:', PAYAPP_USERID);
-        console.log('표준 파라미터: reqType=REMOTE, goodName, goodPrice, phoneNumber, hasTax=0');
+        console.log('호출 방식: 직접 URL → PayApp.call() 대안');
     </script>
 </body>
 </html>
