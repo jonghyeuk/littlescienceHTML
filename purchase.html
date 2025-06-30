@@ -583,80 +583,55 @@
             });
             
             try {
-                // 🔥 PayApp 연동: 안정적인 form submit 방식 (CORS 문제 해결)
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = 'https://script.google.com/macros/s/AKfycbzzNadp9zRk_BgR1uYsXx6LIVlXoXJHO4ehkqj6TLTkYSEte_wp6bwLAwVP6vEctPmt/exec';
-                form.target = '_blank'; // 새창으로 열기 (X-Frame-Options 문제 해결)
-                form.style.display = 'none';
-                
-                // 데이터 추가
-                const actionInput = document.createElement('input');
-                actionInput.type = 'hidden';
-                actionInput.name = 'action';
-                actionInput.value = 'purchase';
-                form.appendChild(actionInput);
-                
-                const licenseInput = document.createElement('input');
-                licenseInput.type = 'hidden';
-                licenseInput.name = 'licenseType';
-                licenseInput.value = selectedLicense;
-                form.appendChild(licenseInput);
-                
-                const emailInput = document.createElement('input');
-                emailInput.type = 'hidden';
-                emailInput.name = 'buyerEmail';
-                emailInput.value = buyerEmail;
-                form.appendChild(emailInput);
-                
-                const phoneInput = document.createElement('input');
-                phoneInput.type = 'hidden';
-                phoneInput.name = 'buyerPhone';
-                phoneInput.value = buyerPhone;
-                form.appendChild(phoneInput);
-                
-                // 타임스탬프 추가 (중복 방지)
-                const timestampInput = document.createElement('input');
-                timestampInput.type = 'hidden';
-                timestampInput.name = 'timestamp';
-                timestampInput.value = Date.now();
-                form.appendChild(timestampInput);
-                
-                // 디버깅용 로그
-                console.log('전송할 데이터:', {
-                    action: 'purchase',
-                    licenseType: selectedLicense,
-                    buyerEmail: buyerEmail,
-                    buyerPhone: buyerPhone,
-                    timestamp: Date.now()
+                // 🔥 PayApp 연동: fetch 방식으로 변경 (JSON 응답 처리)
+                const response = await fetch('https://script.google.com/macros/s/AKfycbyA4fwaZeJ4cwxDpIQsZ6-3VMg5wfkx4EMRFdb7v3JC04tRWCocBov6EA6GM8wj6OTy/exec', {
+                    method: 'POST',
+                    body: new URLSearchParams({
+                        action: 'purchase',
+                        licenseType: selectedLicense,
+                        buyerEmail: buyerEmail,
+                        buyerPhone: buyerPhone,
+                        timestamp: Date.now()
+                    })
                 });
                 
-                // DOM에 추가 후 제출
-                document.body.appendChild(form);
+                if (!response.ok) {
+                    throw new Error('서버 응답 오류: ' + response.status);
+                }
                 
-                // 폼 제출
-                form.submit();
+                const result = await response.json();
+                console.log('서버 응답:', result);
                 
-                // 제출 후 폼 제거
-                setTimeout(() => {
-                    if (document.body.contains(form)) {
-                        document.body.removeChild(form);
+                if (result.success && result.payUrl) {
+                    // PayApp 결제창을 새창으로 열기
+                    const paymentWindow = window.open(
+                        result.payUrl, 
+                        'payapp_payment', 
+                        'width=800,height=700,scrollbars=yes,resizable=yes'
+                    );
+                    
+                    if (!paymentWindow) {
+                        showErrorMessage('팝업이 차단되었습니다. 팝업 차단을 해제하고 다시 시도해주세요.');
+                        return;
                     }
-                }, 1000);
-                
-                // 성공 메시지 표시
-                const resultDiv = document.getElementById('result');
-                resultDiv.className = 'result success';
-                resultDiv.innerHTML = `
-                    <strong>✅ PayApp 결제창으로 이동</strong><br>
-                    새 창에서 PayApp 결제창이 열립니다.<br>
-                    결제 완료 후 <strong>${buyerEmail}</strong>로 이용권 코드가 발송됩니다.<br>
-                    <small>창이 열리지 않으면 팝업 차단을 해제해주세요.</small><br><br>
-                    <button onclick="location.reload()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; margin-top: 10px;">
-                        추가 구매하기
-                    </button>
-                `;
-                resultDiv.style.display = 'block';
+                    
+                    // 성공 메시지 표시
+                    const resultDiv = document.getElementById('result');
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <strong>✅ PayApp 결제창이 열렸습니다</strong><br>
+                        새 창에서 결제를 완료해주세요.<br>
+                        결제 완료 후 <strong>${buyerEmail}</strong>로 이용권 코드가 발송됩니다.<br>
+                        <small>결제 번호: ${result.mulNo}</small><br><br>
+                        <button onclick="location.reload()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; margin-top: 10px;">
+                            추가 구매하기
+                        </button>
+                    `;
+                    resultDiv.style.display = 'block';
+                    
+                } else {
+                    throw new Error(result.message || '알 수 없는 오류가 발생했습니다.');
+                }
                 
                 // 5초 후 폼 다시 활성화 (다른 이용권 구매 가능)
                 setTimeout(() => {
@@ -692,7 +667,7 @@
         
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('LittleScienceAI PayApp 구매 페이지 로드 완료 - 버전 40 (안정적인 form submit 방식)');
+            console.log('LittleScienceAI PayApp 구매 페이지 로드 완료 - 버전 39 (안정적인 form submit 방식)');
             
             // 브라우저 뒤로가기 시 상태 초기화
             window.addEventListener('pageshow', function(event) {
