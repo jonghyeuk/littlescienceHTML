@@ -405,6 +405,12 @@
                 <input type="email" id="buyerEmail" placeholder="example@email.com" required>
                 <small style="color: #666; font-size: 12px;">이용권 코드 발송용 이메일 주소를 정확히 입력해주세요</small>
             </div>
+
+            <div class="input-group">
+                <label for="buyerPhone">📱 휴대전화번호</label>
+                <input type="tel" id="buyerPhone" placeholder="01012345678" required>
+                <small style="color: #666; font-size: 12px;">PayApp 결제 확인용 휴대전화번호 (- 없이 입력)</small>
+            </div>
             
             <button type="submit" class="purchase-btn" id="purchaseBtn" disabled>
                 이용권 선택 후 구매하기
@@ -483,8 +489,9 @@
         function updatePurchaseButton() {
             const btn = document.getElementById('purchaseBtn');
             const email = document.getElementById('buyerEmail').value;
+            const phone = document.getElementById('buyerPhone').value;
             
-            if (selectedLicense && email && !isProcessing) {
+            if (selectedLicense && email && phone && !isProcessing) {
                 btn.disabled = false;
                 btn.textContent = `${selectedLicense} PayApp으로 구매하기 (${selectedPrice.toLocaleString()}원)`;
             } else if (isProcessing) {
@@ -492,7 +499,7 @@
                 btn.textContent = '처리 중...';
             } else {
                 btn.disabled = true;
-                btn.textContent = '이용권 선택 후 구매하기';
+                btn.textContent = '정보를 모두 입력한 후 구매하기';
             }
         }
         
@@ -510,8 +517,15 @@
             document.getElementById('errorMessage').style.display = 'none';
         }
         
-        // 이메일 입력 시 버튼 업데이트
+        // 이메일, 휴대폰번호 입력 시 버튼 업데이트
         document.getElementById('buyerEmail').addEventListener('input', updatePurchaseButton);
+        document.getElementById('buyerPhone').addEventListener('input', function(e) {
+            // 휴대폰 번호 자동 포맷팅 (숫자만 입력)
+            let value = e.target.value.replace(/[^0-9]/g, '');
+            if (value.length > 11) value = value.slice(0, 11);
+            e.target.value = value;
+            updatePurchaseButton();
+        });
         
         // 폼 제출 처리 (PayApp 연동)
         document.getElementById('purchaseForm').addEventListener('submit', async function(e) {
@@ -527,6 +541,8 @@
             }
             
             const buyerEmail = document.getElementById('buyerEmail').value;
+            const buyerPhone = document.getElementById('buyerPhone').value;
+            
             if (!buyerEmail) {
                 showErrorMessage('이메일을 입력해주세요.');
                 return;
@@ -536,6 +552,18 @@
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(buyerEmail)) {
                 showErrorMessage('올바른 이메일 주소를 입력해주세요.');
+                return;
+            }
+            
+            if (!buyerPhone) {
+                showErrorMessage('휴대전화번호를 입력해주세요.');
+                return;
+            }
+            
+            // 휴대폰번호 형식 검증
+            const phoneRegex = /^01[0-9]{8,9}$/;
+            if (!phoneRegex.test(buyerPhone)) {
+                showErrorMessage('올바른 휴대전화번호를 입력해주세요. (예: 01012345678)');
                 return;
             }
             
@@ -555,11 +583,12 @@
             });
             
             try {
-                // 🔥 PayApp 연동: 동적 form 생성 방식 (CORS 우회)
+                // 🔥 PayApp 연동: 개선된 POST 전송 방식
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = 'https://script.google.com/macros/s/AKfycbzy5HX7HJknVY0c-gncd-zCImXHkO-eKe-vk5dvbTHyV-gQyGanhPWTNTdppS-taw7H/exec';
-                form.target = '_blank'; // 새 창에서 열기
+                form.target = '_blank';
+                form.style.display = 'none'; // 숨김
                 
                 // 데이터 추가
                 const actionInput = document.createElement('input');
@@ -580,6 +609,12 @@
                 emailInput.value = buyerEmail;
                 form.appendChild(emailInput);
                 
+                const phoneInput = document.createElement('input');
+                phoneInput.type = 'hidden';
+                phoneInput.name = 'buyerPhone';
+                phoneInput.value = buyerPhone;
+                form.appendChild(phoneInput);
+                
                 // 타임스탬프 추가 (중복 방지)
                 const timestampInput = document.createElement('input');
                 timestampInput.type = 'hidden';
@@ -587,9 +622,28 @@
                 timestampInput.value = Date.now();
                 form.appendChild(timestampInput);
                 
+                // 디버깅용 로그
+                console.log('전송할 데이터:', {
+                    action: 'purchase',
+                    licenseType: selectedLicense,
+                    buyerEmail: buyerEmail,
+                    buyerPhone: buyerPhone,
+                    timestamp: Date.now()
+                });
+                
+                // DOM에 추가 후 제출
                 document.body.appendChild(form);
-                form.submit();
-                document.body.removeChild(form);
+                
+                // 폼 제출 전 잠시 대기
+                setTimeout(() => {
+                    form.submit();
+                    // 제출 후 폼 제거
+                    setTimeout(() => {
+                        if (document.body.contains(form)) {
+                            document.body.removeChild(form);
+                        }
+                    }, 1000);
+                }, 100);
                 
                 // 성공 메시지 표시
                 const resultDiv = document.getElementById('result');
