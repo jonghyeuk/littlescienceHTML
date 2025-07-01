@@ -528,8 +528,8 @@
             updatePurchaseButton();
         });
         
-        // 🔥 PayApp JavaScript API 방식으로 결제 처리
-        document.getElementById('purchaseForm').addEventListener('submit', async function(e) {
+        // 🔥 Form Submit 방식으로 결제 처리 (CORS 문제 해결)
+        document.getElementById('purchaseForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
             if (isProcessing) return;
@@ -570,74 +570,56 @@
             hideErrorMessage();
             updatePurchaseButton();
             
-            try {
-                // 🔥 1단계: 백엔드에서 라이센스 예약
-                const reservationResponse = await fetch('https://script.google.com/macros/s/AKfycbwaI_styBh0KMwdAT-9CRnyqEIhXyZrQWhVvfT7u57y38Q61WJ7KPqQzvBGNCESf40/exec', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        action: 'reserve',
-                        licenseType: selectedLicense,
-                        buyerEmail: buyerEmail,
-                        buyerPhone: buyerPhone
-                    })
-                });
-                
-                const reservationResult = await reservationResponse.json();
-                
-                if (reservationResult.success) {
-                    // 🔥 2단계: PayApp JavaScript API로 결제 (팝업 방식)
-                    console.log('라이센스 예약 성공, PayApp 결제 시작');
-                    
-                    PayApp.setParam('goodname', `LittleScienceAI ${selectedLicense}`);
-                    PayApp.setParam('price', selectedPrice.toString());
-                    PayApp.setParam('recvphone', buyerPhone);
-                    PayApp.setParam('memo', `${selectedLicense} 구매 (${buyerEmail})`);
-                    PayApp.setParam('feedbackurl', 'https://script.google.com/macros/s/AKfycbzy5HX7HJknVY0c-gncd-zCImXHkO-eKe-vk5dvbTHyV-gQyGanhPWTNTdppS-taw7H/exec');
-                    PayApp.setParam('var1', reservationResult.token); // 예약 토큰
-                    PayApp.setParam('var2', reservationResult.code);   // 라이센스 코드
-                    PayApp.setParam('checkretry', 'y');
-                    PayApp.setParam('smsuse', 'n');
-                    
-                    // PayApp 팝업으로 결제창 열기 (iframe 문제 해결!)
-                    PayApp.call();
-                    
-                    // 성공 메시지 표시
-                    const resultDiv = document.getElementById('result');
-                    resultDiv.className = 'result success';
-                    resultDiv.innerHTML = `
-                        <strong>✅ PayApp 결제창 열림</strong><br>
-                        팝업으로 PayApp 결제창이 열렸습니다.<br>
-                        결제 완료 후 <strong>${buyerEmail}</strong>로 이용권 코드가 발송됩니다.<br>
-                        <small>팝업이 차단되었다면 브라우저 설정을 확인해주세요.</small><br><br>
-                        <button onclick="location.reload()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; margin-top: 10px;">
-                            추가 구매하기
-                        </button>
-                    `;
-                    resultDiv.style.display = 'block';
-                    
-                } else {
-                    showErrorMessage(reservationResult.message);
-                }
-                
-            } catch (error) {
-                console.error('결제 요청 오류:', error);
-                showErrorMessage('결제 요청 중 오류가 발생했습니다. 다시 시도해주세요.');
+            // 🔥 Form submit 방식으로 직접 백엔드 호출 (CORS 우회)
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'https://script.google.com/macros/s/AKfycbwaI_styBh0KMwdAT-9CRnyqEIhXyZrQWhVvfT7u57y38Q61WJ7KPqQzvBGNCESf40/exec';
+            form.target = '_blank'; // 새 창에서 열기
+            
+            // 파라미터 추가
+            const params = {
+                action: 'purchase',
+                licenseType: selectedLicense,
+                buyerEmail: buyerEmail,
+                buyerPhone: buyerPhone
+            };
+            
+            for (const [key, value] of Object.entries(params)) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
             }
             
-            // 5초 후 폼 다시 활성화
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+            
+            // 성공 메시지 표시
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'result success';
+            resultDiv.innerHTML = `
+                <strong>✅ PayApp 결제창으로 이동</strong><br>
+                새 창에서 PayApp 결제가 진행됩니다.<br>
+                결제 완료 후 <strong>${buyerEmail}</strong>로 이용권 코드가 발송됩니다.<br><br>
+                <button onclick="location.reload()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; margin-top: 10px;">
+                    추가 구매하기
+                </button>
+            `;
+            resultDiv.style.display = 'block';
+            
+            // 3초 후 폼 다시 활성화
             setTimeout(() => {
                 isProcessing = false;
                 updatePurchaseButton();
                 document.getElementById('loading').style.display = 'none';
-            }, 5000);
+            }, 3000);
         });
         
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('LittleScienceAI PayApp JavaScript API 페이지 로드 완료');
+            console.log('LittleScienceAI PayApp 페이지 로드 완료');
             
             window.addEventListener('pageshow', function(event) {
                 if (event.persisted) {
