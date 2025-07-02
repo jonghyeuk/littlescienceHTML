@@ -156,21 +156,6 @@
             font-size: 20px;
         }
 
-        .license-code {
-            background: white;
-            border: 2px dashed #667eea;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 15px 0;
-            font-family: 'Courier New', monospace;
-            font-size: 24px;
-            font-weight: bold;
-            color: #667eea;
-            letter-spacing: 2px;
-            user-select: all;
-            cursor: text;
-        }
-
         .license-details {
             color: #666;
             font-size: 14px;
@@ -341,11 +326,6 @@
                 font-size: 28px;
             }
             
-            .license-code {
-                font-size: 18px;
-                padding: 15px;
-            }
-            
             .main-button {
                 display: block;
                 margin: 10px 0;
@@ -362,10 +342,6 @@
             .success-badge {
                 font-size: 14px;
                 padding: 12px 25px;
-            }
-            
-            .license-code {
-                font-size: 16px;
             }
         }
 
@@ -397,11 +373,8 @@
             <div style="font-size: 20px; font-weight: bold; color: #667eea; margin: 10px 0;">
                 [이용권 종류]
             </div>
-            <div class="license-code">
-                [이용권 코드]
-            </div>
             <div class="license-details">
-                💡 위 코드를 마우스로 선택하여 복사하세요
+                🔒 이용권 코드는 이메일로 안전하게 발송되었습니다
             </div>
         </div>
 
@@ -427,16 +400,9 @@
 
         <!-- 버튼 그룹 -->
         <div class="button-group">
-            <a href="https://little-science-ai-918631854597.asia-northeast3.run.app/" 
+            <a href="https://littlescienceai.com/" 
                class="main-button" target="_blank">
                 🧪 LittleScienceAI 시작하기
-            </a>
-            <br>
-            <a href="mailto:[구매자 이메일]" class="secondary-button">
-                📧 이메일 다시 확인
-            </a>
-            <a href="#" onclick="copyCode()" class="secondary-button">
-                📋 코드 복사하기
             </a>
         </div>
 
@@ -453,36 +419,6 @@
     </div>
 
     <script>
-        // 코드 복사 기능
-        function copyCode() {
-            const codeElement = document.querySelector('.license-code');
-            const code = codeElement.textContent;
-            
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(code).then(() => {
-                    alert('✅ 이용권 코드가 클립보드에 복사되었습니다!');
-                }).catch(() => {
-                    fallbackCopy(code);
-                });
-            } else {
-                fallbackCopy(code);
-            }
-        }
-        
-        function fallbackCopy(text) {
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            document.body.appendChild(textArea);
-            textArea.select();
-            try {
-                document.execCommand('copy');
-                alert('✅ 이용권 코드가 클립보드에 복사되었습니다!');
-            } catch (err) {
-                alert('❌ 복사에 실패했습니다. 수동으로 복사해주세요.');
-            }
-            document.body.removeChild(textArea);
-        }
-
         // 페이지 로드 시 자동 스크롤
         document.addEventListener('DOMContentLoaded', function() {
             window.scrollTo(0, 0);
