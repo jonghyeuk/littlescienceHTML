@@ -370,8 +370,8 @@
         <!-- 이용권 정보 -->
         <div class="license-info">
             <h3>📋 구매한 이용권</h3>
-            <div style="font-size: 20px; font-weight: bold; color: #667eea; margin: 10px 0;">
-                [이용권 종류]
+            <div style="font-size: 20px; font-weight: bold; color: #667eea; margin: 10px 0;" data-license-type>
+                구매하신 이용권
             </div>
             <div class="license-details">
                 🔒 이용권 코드는 이메일로 안전하게 발송되었습니다
@@ -382,7 +382,7 @@
         <div class="email-notice">
             <h4>📧 이메일 발송 완료</h4>
             <p>아래 이메일 주소로 이용권 코드가 발송되었습니다:</p>
-            <div class="email-address">[구매자 이메일]</div>
+            <div class="email-address" data-buyer-email>등록하신 이메일 주소</div>
             <p>📱 이메일이 도착하지 않으면 스팸함을 확인해주세요</p>
             <p>⏰ 보통 1-2분 내에 이메일이 도착합니다</p>
         </div>
@@ -400,7 +400,7 @@
 
         <!-- 버튼 그룹 -->
         <div class="button-group">
-            <a href="https://littlescienceai.com/" 
+            <a href="https://little-science-ai-918631854597.asia-northeast3.run.app/" 
                class="main-button" target="_blank">
                 🧪 LittleScienceAI 시작하기
             </a>
@@ -412,15 +412,50 @@
             <p>이용 중 궁금한 점이나 문제가 있으시면 언제든 연락주세요</p>
             <a href="#" class="kakao-button">💬 카카오톡 채널: 리틀사이언스AI</a>
             <p style="margin-top: 15px; font-size: 12px; color: #999;">
-                결제 번호: [결제 번호]<br>
-                결제 시간: [결제 시간]
+                결제가 정상적으로 완료되었습니다<br>
+                결제 완료 시간: <span id="paymentTime"></span>
             </p>
         </div>
     </div>
 
     <script>
-        // 페이지 로드 시 자동 스크롤
+        // URL 파라미터 읽기 함수
+        function getUrlParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // 페이지 로드 시 동적 정보 설정
         document.addEventListener('DOMContentLoaded', function() {
+            // URL 파라미터에서 정보 가져오기
+            const licenseType = getUrlParameter('licenseType') || '구매하신 이용권';
+            const buyerEmail = getUrlParameter('email') || '등록하신 이메일 주소';
+
+            // 동적으로 텍스트 교체
+            const licenseTypeElement = document.querySelector('[data-license-type]');
+            const emailElements = document.querySelectorAll('[data-buyer-email]');
+
+            if (licenseTypeElement) {
+                licenseTypeElement.textContent = licenseType;
+            }
+
+            emailElements.forEach(element => {
+                element.textContent = buyerEmail;
+            });
+
+            // 현재 시간 설정
+            const now = new Date();
+            const timeString = now.getFullYear() + '년 ' + 
+                              (now.getMonth() + 1) + '월 ' + 
+                              now.getDate() + '일 ' + 
+                              now.getHours().toString().padStart(2, '0') + ':' + 
+                              now.getMinutes().toString().padStart(2, '0');
+            
+            const paymentTimeElement = document.getElementById('paymentTime');
+            if (paymentTimeElement) {
+                paymentTimeElement.textContent = timeString;
+            }
+
             window.scrollTo(0, 0);
             
             // 성공 사운드 효과 (선택사항)
