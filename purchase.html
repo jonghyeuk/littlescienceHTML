@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LittleScienceAI 이용권 구매 (PayApp)</title>
+    <title>LittleScienceAI 이용권 구매</title>
     
-    <!-- PayApp JavaScript API 추가 -->
+    <!-- 🔥 PayApp JavaScript API 추가 -->
     <script src="https://lite.payapp.kr/public/api/v2/payapp-lite.js"></script>
     
     <style>
@@ -117,16 +117,25 @@
             margin: 5px 0;
         }
 
-        /* 에러 메시지 */
-        .error-message {
-            background: #ffe6e6;
-            border: 2px solid #e74c3c;
-            color: #e74c3c;
+        /* 에러/성공 메시지 */
+        .message {
             padding: 15px;
             border-radius: 10px;
             margin: 15px 0;
             display: none;
             text-align: center;
+        }
+
+        .message.error {
+            background: #ffe6e6;
+            border: 2px solid #e74c3c;
+            color: #e74c3c;
+        }
+
+        .message.success {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
         }
         
         .license-option {
@@ -240,45 +249,8 @@
             100% { transform: rotate(360deg); }
         }
         
-        .result {
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 20px;
-            display: none;
-        }
-        
-        .result.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .result.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
         .radio-hidden {
             display: none;
-        }
-
-        .security-info {
-            background: #f8f9fa;
-            border-left: 4px solid #667eea;
-            padding: 15px;
-            margin: 20px 0 0 0;
-        }
-
-        .security-info h4 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-
-        .security-info ul {
-            color: #666;
-            font-size: 14px;
-            margin-left: 20px;
         }
 
         .steps {
@@ -302,6 +274,24 @@
         
         .steps li {
             margin-bottom: 5px;
+        }
+
+        .security-info {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0 0 0;
+        }
+
+        .security-info h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .security-info ul {
+            color: #666;
+            font-size: 14px;
+            margin-left: 20px;
         }
 
         /* 모바일 반응형 */
@@ -373,13 +363,12 @@
             <p>다양한 결제수단을 지원합니다</p>
         </div>
 
-        <!-- 에러 메시지 -->
-        <div class="error-message" id="errorMessage">
-            <strong>⚠️ 알림</strong><br>
-            <span id="errorText"></span>
+        <!-- 메시지 영역 -->
+        <div class="message" id="messageArea">
+            <span id="messageText"></span>
         </div>
         
-        <form id="purchaseForm">
+        <div id="purchaseForm">
             <div class="license-options">
                 <div class="license-option" onclick="selectLicense('7일 이용권', 9900)">
                     <input type="radio" name="license" value="7일 이용권" class="radio-hidden" id="license7">
@@ -415,17 +404,15 @@
                 <small style="color: #666; font-size: 12px;">PayApp 결제 확인용 휴대전화번호 (- 없이 입력)</small>
             </div>
             
-            <button type="submit" class="purchase-btn" id="purchaseBtn" disabled>
+            <button type="button" class="purchase-btn" id="purchaseBtn" onclick="startPurchase()" disabled>
                 이용권 선택 후 구매하기
             </button>
-        </form>
+        </div>
         
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>PayApp 결제창으로 이동 중입니다...</p>
+            <p id="loadingText">처리 중입니다...</p>
         </div>
-        
-        <div class="result" id="result"></div>
         
         <div class="steps">
             <h4>📝 구매 절차</h4>
@@ -448,7 +435,6 @@
                 <li>PayApp을 통한 안전한 결제 시스템</li>
                 <li>SSL 보안 인증서로 개인정보 보호</li>
                 <li>결제 완료 후 즉시 이용권 발급</li>
-                <li>중복 결제 방지 시스템 적용</li>
                 <li>문의: 카카오톡 채널 '리틀사이언스AI'</li>
             </ul>
         </div>
@@ -459,7 +445,7 @@
         let selectedPrice = 0;
         let isProcessing = false; // 중복 클릭 방지
         
-        // PayApp JavaScript API 초기 설정
+        // 🔥 PayApp JavaScript API 초기 설정
         document.addEventListener('DOMContentLoaded', function() {
             PayApp.setDefault('userid', 'kstore101');
             PayApp.setDefault('shopname', 'LittleScienceAI');
@@ -487,7 +473,7 @@
             selectedPrice = price;
             
             updatePurchaseButton();
-            hideErrorMessage();
+            hideMessage();
         }
         
         function updatePurchaseButton() {
@@ -507,16 +493,32 @@
             }
         }
         
-        function showErrorMessage(message) {
-            const errorDiv = document.getElementById('errorMessage');
-            const errorText = document.getElementById('errorText');
-            errorText.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(hideErrorMessage, 5000);
+        function showMessage(message, type = 'error') {
+            const messageArea = document.getElementById('messageArea');
+            const messageText = document.getElementById('messageText');
+            
+            messageText.textContent = message;
+            messageArea.className = `message ${type}`;
+            messageArea.style.display = 'block';
+            
+            if (type === 'error') {
+                setTimeout(hideMessage, 5000);
+            }
         }
         
-        function hideErrorMessage() {
-            document.getElementById('errorMessage').style.display = 'none';
+        function hideMessage() {
+            document.getElementById('messageArea').style.display = 'none';
+        }
+        
+        function showLoading(text = '처리 중입니다...') {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('purchaseForm').style.display = 'none';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('purchaseForm').style.display = 'block';
         }
         
         // 이메일, 휴대폰번호 입력 시 버튼 업데이트
@@ -528,14 +530,12 @@
             updatePurchaseButton();
         });
         
-        // 🔥 Form Submit 방식으로 결제 처리 (CORS 문제 해결)
-        document.getElementById('purchaseForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
+        // 🔥 새로운 구매 플로우
+        async function startPurchase() {
             if (isProcessing) return;
             
             if (!selectedLicense) {
-                showErrorMessage('이용권을 선택해주세요.');
+                showMessage('이용권을 선택해주세요.');
                 return;
             }
             
@@ -543,90 +543,105 @@
             const buyerPhone = document.getElementById('buyerPhone').value;
             
             if (!buyerEmail) {
-                showErrorMessage('이메일을 입력해주세요.');
+                showMessage('이메일을 입력해주세요.');
                 return;
             }
             
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(buyerEmail)) {
-                showErrorMessage('올바른 이메일 주소를 입력해주세요.');
+                showMessage('올바른 이메일 주소를 입력해주세요.');
                 return;
             }
             
             if (!buyerPhone) {
-                showErrorMessage('휴대전화번호를 입력해주세요.');
+                showMessage('휴대전화번호를 입력해주세요.');
                 return;
             }
             
             const phoneRegex = /^01[0-9]{8,9}$/;
             if (!phoneRegex.test(buyerPhone)) {
-                showErrorMessage('올바른 휴대전화번호를 입력해주세요. (예: 01012345678)');
+                showMessage('올바른 휴대전화번호를 입력해주세요. (예: 01012345678)');
                 return;
             }
             
             isProcessing = true;
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('result').style.display = 'none';
-            hideErrorMessage();
             updatePurchaseButton();
+            showLoading('라이센스 예약 중...');
+            hideMessage();
             
-            // 🔥 Form submit 방식으로 직접 백엔드 호출 (CORS 우회)
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = 'https://script.google.com/macros/s/AKfycbzVqligghLErdEJpMBmAWKO1p7No3zxypdl2WYKG6dMDmezJvrye4aBJbaXnaiS9tcJ/exec';
-            form.target = '_blank'; // 새 창에서 열기
-            
-            // 파라미터 추가
-            const params = {
-                action: 'purchase',
-                licenseType: selectedLicense,
-                buyerEmail: buyerEmail,
-                buyerPhone: buyerPhone
-            };
-            
-            for (const [key, value] of Object.entries(params)) {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = key;
-                input.value = value;
-                form.appendChild(input);
-            }
-            
-            document.body.appendChild(form);
-            form.submit();
-            document.body.removeChild(form);
-            
-            // 성공 메시지 표시
-            const resultDiv = document.getElementById('result');
-            resultDiv.className = 'result success';
-            resultDiv.innerHTML = `
-                <strong>✅ PayApp 결제창으로 이동</strong><br>
-                새 창에서 PayApp 결제가 진행됩니다.<br>
-                결제 완료 후 <strong>${buyerEmail}</strong>로 이용권 코드가 발송됩니다.<br><br>
-                <button onclick="location.reload()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; margin-top: 10px;">
-                    추가 구매하기
-                </button>
-            `;
-            resultDiv.style.display = 'block';
-            
-            // 3초 후 폼 다시 활성화
-            setTimeout(() => {
+            try {
+                // 🔥 1단계: 백엔드에서 라이센스 예약
+                const reserveResponse = await fetch('https://script.google.com/macros/s/AKfycbx9jKTbP6nFz744sF9z2YpUx-EV9yqWE-lVU9hDau2tcX0rF8JFN8PI5pF_QjVxEHzE/exec', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'reserve',
+                        licenseType: selectedLicense,
+                        buyerEmail: buyerEmail
+                    })
+                });
+                
+                const reserveData = await reserveResponse.json();
+                console.log('라이센스 예약 결과:', reserveData);
+                
+                if (!reserveData.success) {
+                    throw new Error(reserveData.message);
+                }
+                
+                showLoading('PayApp 결제창으로 이동 중...');
+                
+                // 🔥 2단계: PayApp JavaScript API로 결제 진행
+                PayApp.setParam('goodname', `LittleScienceAI ${selectedLicense}`);
+                PayApp.setParam('price', selectedPrice.toString());
+                PayApp.setParam('recvphone', buyerPhone);
+                PayApp.setParam('memo', `LittleScienceAI ${selectedLicense} 구매 (${buyerEmail})`);
+                PayApp.setParam('feedbackurl', 'https://script.google.com/macros/s/AKfycbx9jKTbP6nFz744sF9z2YpUx-EV9yqWE-lVU9hDau2tcX0rF8JFN8PI5pF_QjVxEHzE/exec');
+                PayApp.setParam('var1', reserveData.token);
+                PayApp.setParam('var2', reserveData.code);
+                PayApp.setParam('checkretry', 'y');
+                PayApp.setParam('smsuse', 'n');
+                PayApp.setParam('skip_cstpage', 'y');
+                
+                console.log('PayApp 파라미터 설정 완료');
+                
+                // PayApp 결제창 호출
+                PayApp.payrequest();
+                
+                // 성공 메시지 표시
+                hideLoading();
+                showMessage(
+                    `✅ PayApp 결제창으로 이동했습니다.\n` +
+                    `결제 완료 후 ${buyerEmail}로 이용권 코드가 발송됩니다.`,
+                    'success'
+                );
+                
+                // 3초 후 폼 다시 활성화 (추가 구매 가능하도록)
+                setTimeout(() => {
+                    isProcessing = false;
+                    updatePurchaseButton();
+                }, 3000);
+                
+            } catch (error) {
+                console.error('구매 프로세스 오류:', error);
+                hideLoading();
+                showMessage(`구매 처리 중 오류가 발생했습니다: ${error.message}`);
                 isProcessing = false;
                 updatePurchaseButton();
-                document.getElementById('loading').style.display = 'none';
-            }, 3000);
-        });
+            }
+        }
         
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('LittleScienceAI PayApp 페이지 로드 완료');
+            console.log('LittleScienceAI PayApp JavaScript API 페이지 로드 완료');
             
             window.addEventListener('pageshow', function(event) {
                 if (event.persisted) {
                     isProcessing = false;
                     updatePurchaseButton();
-                    document.getElementById('loading').style.display = 'none';
-                    hideErrorMessage();
+                    hideLoading();
+                    hideMessage();
                 }
             });
         });
