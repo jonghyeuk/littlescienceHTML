@@ -381,24 +381,24 @@
         
         <form id="purchaseForm">
             <div class="license-options">
-                <div class="license-option" onclick="selectLicense('7일 이용권', 4900)">
+                <div class="license-option" onclick="selectLicense('7일 이용권', 9900)">
                     <input type="radio" name="license" value="7일 이용권" class="radio-hidden" id="license7">
                     <div class="license-title">🎫 7일 이용권</div>
-                    <div class="license-price">4,900원</div>
+                    <div class="license-price">9,900원</div>
                     <div class="license-description">일주일간 빠른 연구 탐색</div>
                 </div>
                 
-                <div class="license-option" onclick="selectLicense('15일 이용권', 9900)">
+                <div class="license-option" onclick="selectLicense('15일 이용권', 14900)">
                     <input type="radio" name="license" value="15일 이용권" class="radio-hidden" id="license15">
                     <div class="license-title">🎫 15일 이용권</div>
-                    <div class="license-price">9,900원</div>
+                    <div class="license-price">14,900원</div>
                     <div class="license-description">2주간 집중 연구 탐색</div>
                 </div>
                 
-                <div class="license-option" onclick="selectLicense('30일 이용권', 12900)">
+                <div class="license-option" onclick="selectLicense('30일 이용권', 18900)">
                     <input type="radio" name="license" value="30일 이용권" class="radio-hidden" id="license30">
                     <div class="license-title">🎫 30일 이용권</div>
-                    <div class="license-price">12,900원</div>
+                    <div class="license-price">18,900원</div>
                     <div class="license-description">한 달간 무제한 연구 주제 탐색</div>
                 </div>
             </div>
@@ -573,7 +573,7 @@
             // 🔥 Form submit 방식으로 직접 백엔드 호출 (CORS 우회)
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = 'https://script.google.com/macros/s/AKfycbxUQquFtPxzerierQDZarPSRZbXiz2cR1GO1ZOQVZ-n31PhSA-TqARi2n93F7YdhiZb/exec';
+            form.action = 'https://script.google.com/macros/s/AKfycbz3MCFx8TzdMrhsULLSjSDW3eCDrFbCGWFOMK_N0bH-hK4Hj7jyuYvf4laKeanQ-g-S/exec';
             form.target = '_blank'; // 새 창에서 열기
             
             // 파라미터 추가
