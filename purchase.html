@@ -1,652 +1,643 @@
-// 🚀 LittleScienceAI + PayApp 자동 구매 시스템 백엔드 (문제점 수정 버전)
-
-// 🔧 설정값들 (기존 유지)
-const CONFIG = {
-  SHEET_ID: '1ogVkRidiKcL2fcn9DTgPFlCp-nehjDZMRhx7EJqKIr0',
-  PAYAPP_USERID: 'kstore101',
-  PAYAPP_LINKKEY: 'CCiZIswPVKh+xt+QKt/+b+1DPJnCCRVaOgT+oqg6zaM=',
-  PAYAPP_LINKVAL: 'CCiZIswPVKh+xt+QKt/+bxTdEGsBOXZ7gUSUjzGppZM=',
-  FEEDBACK_URL: 'https://script.google.com/macros/s/AKfycbzOF3yUJXY22nUckDBvPmNdAzSZjAjEJDi4mcPwu_54t7gLRham0V6nst-JQVRHZrrf/exec'
-};
-
-const PRICE_MAP = {
-  '7일 이용권': 5900,
-  '15일 이용권': 9900,
-  '30일 이용권': 12900
-};
-
-// 🔧 URL 파라미터 파싱 함수
-function parseQueryString(queryString) {
-  const params = {};
-  if (!queryString) return params;
-  
-  const pairs = queryString.split('&');
-  for (let i = 0; i < pairs.length; i++) {
-    const pair = pairs[i].split('=');
-    if (pair.length === 2) {
-      const key = decodeURIComponent(pair[0]);
-      const value = decodeURIComponent(pair[1]);
-      params[key] = value;
-    }
-  }
-  return params;
-}
-
-// 🔗 FeedbackURL 반환
-function getFeedbackUrl() {
-  return CONFIG.FEEDBACK_URL;
-}
-
-// 📝 메인 POST 처리 함수 (🔥 핵심 수정)
-function doPost(e) {
-  try {
-    let data;
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LittleScienceAI 이용권 구매 (PayApp)</title>
     
-    if (e.postData && e.postData.contents) {
-      try {
-        data = JSON.parse(e.postData.contents);
-      } catch (jsonError) {
-        data = e.parameter;
-      }
-    } else {
-      data = e.parameter;
-    }
+    <!-- PayApp JavaScript API 추가 -->
+    <script src="https://lite.payapp.kr/public/api/v2/payapp-lite.js"></script>
     
-    console.log('받은 데이터:', data);
-    
-    // 🔥 명확한 요청 구분으로 응답 형식 오류 방지
-    // 1. 구매 요청 처리 (우선순위)
-    if (data.action === 'purchase') {
-      console.log('구매 요청 처리 시작');
-      const reservationResult = purchaseLicense(data.licenseType, data.buyerEmail);
-      
-      if (reservationResult.success) {
-        const payAppResult = requestPayAppPayment(
-          data.licenseType, 
-          data.buyerEmail,
-          data.buyerPhone,
-          reservationResult.code, 
-          reservationResult.token,
-          reservationResult.rowIndex
-        );
-        
-        if (payAppResult.success) {
-          const html = createRedirectPage(payAppResult.payUrl, payAppResult.mulNo);
-          return HtmlService.createHtmlOutput(html);
-        } else {
-          return HtmlService.createHtmlOutput(createErrorPageHtml(payAppResult.message));
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-      } else {
-        return HtmlService.createHtmlOutput(createErrorPageHtml(reservationResult.message));
-      }
-    }
-    
-    // 2. PayApp 콜백 처리
-    if (data.userid && data.linkval && data.mul_no) {
-      console.log('PayApp 콜백 처리 시작');
-      const result = handlePayAppCallback(data);
-      return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.TEXT);
-    }
-    
-    // 3. 알 수 없는 요청
-    console.log('알 수 없는 요청:', data);
-    return HtmlService.createHtmlOutput(createErrorPageHtml('잘못된 요청입니다.'));
-      
-  } catch (error) {
-    console.error('doPost 에러:', error);
-    // 🔥 모든 에러도 HTML로 반환
-    return HtmlService.createHtmlOutput(createErrorPageHtml('시스템 오류가 발생했습니다: ' + error.toString()));
-  }
-}
-
-// 📝 GET 요청 처리 함수 (디버깅용)
-function doGet(e) {
-  console.log('GET 요청 받음:', e.parameter);
-  
-  const html = '<!DOCTYPE html><html><head><title>LittleScienceAI 백엔드</title><meta charset="UTF-8"></head><body><h1>🧪 LittleScienceAI 백엔드</h1><p>백엔드가 정상 작동 중입니다!</p><p><strong>주의:</strong> 이 페이지는 GET 요청 결과입니다.</p><p>구매는 프론트엔드 HTML 페이지에서 POST 요청으로 진행해야 합니다.</p><hr><h3>📊 시스템 상태</h3><ul><li>✅ Google Apps Script 작동</li><li>✅ 스프레드시트 연결</li><li>✅ PayApp 설정 완료</li></ul></body></html>';
-  
-  return HtmlService.createHtmlOutput(html);
-}
-
-// 🎫 라이센스 구매 예약 (🔥 순환 검색 로직 적용)
-function purchaseLicense(licenseType, buyerEmail) {
-  try {
-    const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getActiveSheet();
-    const data = sheet.getDataRange().getValues();
-    
-    console.log('구매 요청:', licenseType, buyerEmail);
-    
-    // 진행 중인 거래 중복 체크 (1분 내)
-    const oneMinuteAgo = new Date(Date.now() - 1 * 60 * 1000);
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][8] === buyerEmail &&  // 🔥 7 → 8으로 수정 (I열이 이메일)
-          (data[i][9] === 'PENDING' || data[i][9] === 'PAYAPP_REQUESTED')) {
         
-        if (data[i][8] && new Date(data[i][8]) > oneMinuteAgo) {
-          return {
-            success: false,
-            message: '이미 처리 중인 결제가 있습니다. 1분 후 다시 시도해주세요.'
-          };
+        html {
+            scroll-behavior: smooth;
         }
-      }
-    }
-    
-    // 🔥 개선된 재고 찾기: 순환 검색 (끝까지 가면 처음부터 다시)
-    const availableRows = [];
-    
-    // 1단계: 해당 타입의 모든 사용 가능한 코드 수집
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][1] === licenseType && data[i][4] === '' && 
-          (!data[i][9] || data[i][9] === '')) {
-        availableRows.push({
-          rowIndex: i + 1,
-          code: data[i][0]
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+            position: relative;
+        }
+
+        /* 배경 애니메이션 풍선 효과 */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="15" fill="rgba(255,255,255,0.05)"/><circle cx="80" cy="40" r="20" fill="rgba(255,255,255,0.03)"/><circle cx="40" cy="70" r="12" fill="rgba(255,255,255,0.06)"/><circle cx="90" cy="80" r="18" fill="rgba(255,255,255,0.04)"/></svg>');
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 90%;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* 안전결제 배지 */
+        .payment-badge {
+            position: absolute;
+            top: -15px;
+            right: 30px;
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 10px 20px rgba(40,167,69,0.3);
+            animation: bounce 2s infinite;
+            transform: rotate(-5deg);
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0) rotate(-5deg); }
+            40% { transform: translateY(-10px) rotate(-5deg); }
+            60% { transform: translateY(-5px) rotate(-5deg); }
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        /* PayApp 결제 정보 */
+        .payment-info {
+            background: #e8f5e8;
+            border: 2px solid #28a745;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .payment-info h3 {
+            color: #28a745;
+            margin-bottom: 10px;
+        }
+
+        .payment-info p {
+            color: #666;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        /* 에러 메시지 */
+        .error-message {
+            background: #ffe6e6;
+            border: 2px solid #e74c3c;
+            color: #e74c3c;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: none;
+            text-align: center;
+        }
+        
+        .license-option {
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .license-option:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+        
+        .license-option.selected {
+            border-color: #667eea;
+            background-color: #f8f9ff;
+        }
+        
+        .license-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .license-price {
+            font-size: 24px;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .license-description {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .input-group {
+            margin: 25px 0;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .purchase-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 20px;
+        }
+        
+        .purchase-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .purchase-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+            margin-top: 15px;
+        }
+
+        .loading .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 15px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .result {
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .result.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .result.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .radio-hidden {
+            display: none;
+        }
+
+        .security-info {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0 0 0;
+        }
+
+        .security-info h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .security-info ul {
+            color: #666;
+            font-size: 14px;
+            margin-left: 20px;
+        }
+
+        .steps {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .steps h4 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .steps ol {
+            color: #666;
+            font-size: 14px;
+            padding-left: 20px;
+        }
+        
+        .steps li {
+            margin-bottom: 5px;
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px 0;
+            }
+            
+            .container {
+                padding: 30px 25px;
+                margin: 10px auto;
+                width: calc(100% - 20px);
+                min-height: auto;
+            }
+
+            .payment-badge {
+                top: -10px;
+                right: 20px;
+                padding: 8px 20px;
+                font-size: 12px;
+            }
+            
+            .license-option {
+                margin: 10px 0;
+                padding: 15px;
+            }
+            
+            .license-title {
+                font-size: 18px;
+            }
+            
+            .license-price {
+                font-size: 20px;
+            }
+        }
+
+        /* 매우 작은 화면 대응 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px 15px;
+                margin: 5px auto;
+                width: calc(100% - 10px);
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .purchase-btn {
+                font-size: 16px;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="payment-badge">🔒 안전결제</div>
+        
+        <div class="header">
+            <h1>🧪 LittleScienceAI</h1>
+            <p>과학논문 주제 탐색 도우미 이용권 구매</p>
+        </div>
+
+        <!-- PayApp 결제 정보 -->
+        <div class="payment-info">
+            <h3>💳 PayApp 안전결제</h3>
+            <p>신용카드, 휴대전화, 카카오페이, 네이버페이 등</p>
+            <p>다양한 결제수단을 지원합니다</p>
+        </div>
+
+        <!-- 에러 메시지 -->
+        <div class="error-message" id="errorMessage">
+            <strong>⚠️ 알림</strong><br>
+            <span id="errorText"></span>
+        </div>
+        
+        <form id="purchaseForm">
+            <div class="license-options">
+                <div class="license-option" onclick="selectLicense('7일 이용권', 4900)">
+                    <input type="radio" name="license" value="7일 이용권" class="radio-hidden" id="license7">
+                    <div class="license-title">🎫 7일 이용권</div>
+                    <div class="license-price">4,900원</div>
+                    <div class="license-description">일주일간 빠른 연구 탐색</div>
+                </div>
+                
+                <div class="license-option" onclick="selectLicense('15일 이용권', 9900)">
+                    <input type="radio" name="license" value="15일 이용권" class="radio-hidden" id="license15">
+                    <div class="license-title">🎫 15일 이용권</div>
+                    <div class="license-price">9,900원</div>
+                    <div class="license-description">2주간 집중 연구 탐색</div>
+                </div>
+                
+                <div class="license-option" onclick="selectLicense('30일 이용권', 12900)">
+                    <input type="radio" name="license" value="30일 이용권" class="radio-hidden" id="license30">
+                    <div class="license-title">🎫 30일 이용권</div>
+                    <div class="license-price">12,900원</div>
+                    <div class="license-description">한 달간 무제한 연구 주제 탐색</div>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label for="buyerEmail">📧 이메일 주소</label>
+                <input type="email" id="buyerEmail" placeholder="example@email.com" required>
+                <small style="color: #666; font-size: 12px;">이용권 코드 발송용 이메일 주소를 정확히 입력해주세요</small>
+            </div>
+
+            <div class="input-group">
+                <label for="buyerPhone">📱 휴대전화번호</label>
+                <input type="tel" id="buyerPhone" placeholder="01012345678" required>
+                <small style="color: #666; font-size: 12px;">PayApp 결제 확인용 휴대전화번호 (- 없이 입력)</small>
+            </div>
+            
+            <button type="submit" class="purchase-btn" id="purchaseBtn" disabled>
+                이용권 선택 후 구매하기
+            </button>
+        </form>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>PayApp 결제창으로 이동 중입니다...</p>
+        </div>
+        
+        <div class="result" id="result"></div>
+        
+        <div class="steps">
+            <h4>📝 구매 절차</h4>
+            <ol>
+                <li>원하는 이용권을 선택하세요</li>
+                <li>이메일 주소를 정확히 입력하세요</li>
+                <li>구매하기 버튼을 클릭하세요</li>
+                <li>PayApp 결제창에서 결제를 완료하세요</li>
+                <li>이메일로 전송된 이용권 코드를 확인하세요</li>
+            </ol>
+            <p style="margin-top: 10px; font-size: 13px; color: #888;">
+                💡 <strong>연속 구매 가능:</strong> 동일한 이메일로 여러 개 구매 시 각각 다른 코드가 발송됩니다.
+            </p>
+        </div>
+
+        <!-- 보안 정보 -->
+        <div class="security-info">
+            <h4>🛡️ 안전한 결제</h4>
+            <ul>
+                <li>PayApp을 통한 안전한 결제 시스템</li>
+                <li>SSL 보안 인증서로 개인정보 보호</li>
+                <li>결제 완료 후 즉시 이용권 발급</li>
+                <li>중복 결제 방지 시스템 적용</li>
+                <li>문의: 카카오톡 채널 '리틀사이언스AI'</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let selectedLicense = null;
+        let selectedPrice = 0;
+        let isProcessing = false; // 중복 클릭 방지
+        
+        // PayApp JavaScript API 초기 설정
+        document.addEventListener('DOMContentLoaded', function() {
+            PayApp.setDefault('userid', 'kstore101');
+            PayApp.setDefault('shopname', 'LittleScienceAI');
+            console.log('PayApp JavaScript API 초기화 완료');
         });
-      }
-    }
-    
-    console.log('사용 가능한', licenseType, '코드 개수:', availableRows.length);
-    
-    if (availableRows.length === 0) {
-      console.log('재고 부족:', licenseType);
-      return {
-        success: false,
-        message: licenseType + ' 재고가 부족합니다.'
-      };
-    }
-    
-    // 2단계: 마지막 사용된 행 다음부터 할당 (순환)
-    let selectedRow = null;
-    
-    // 마지막 사용된 행 찾기
-    let lastUsedRowIndex = 0;
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][1] === licenseType && data[i][4] !== '') {
-        lastUsedRowIndex = Math.max(lastUsedRowIndex, i);
-      }
-    }
-    
-    console.log('마지막 사용된 행:', lastUsedRowIndex);
-    
-    // 마지막 사용된 행 다음부터 찾기
-    for (let i = 0; i < availableRows.length; i++) {
-      if (availableRows[i].rowIndex > lastUsedRowIndex) {
-        selectedRow = availableRows[i];
-        break;
-      }
-    }
-    
-    // 찾지 못했으면 처음부터 다시 찾기 (순환)
-    if (!selectedRow) {
-      selectedRow = availableRows[0];
-      console.log('끝까지 갔으므로 처음부터 할당:', selectedRow.code);
-    } else {
-      console.log('순차 할당:', selectedRow.code);
-    }
-    
-    const uniqueToken = Utilities.getUuid();
-    updatePaymentStatus(selectedRow.rowIndex, 'PENDING', '', uniqueToken);
-    
-    sheet.getRange(selectedRow.rowIndex, 9).setValue(buyerEmail);  // 🔥 8 → 9로 수정 (I열에 이메일)
-    sheet.getRange(selectedRow.rowIndex, 10).setValue(new Date()); // 🔥 9 → 10으로 수정 (J열에 날짜)
-    
-    console.log('예약 완료:', selectedRow.code, '→', buyerEmail, '(토큰:', uniqueToken, ')');
-    
-    return {
-      success: true,
-      code: selectedRow.code,
-      token: uniqueToken,
-      message: '예약 완료. PayApp 결제를 진행해주세요.',
-      rowIndex: selectedRow.rowIndex
-    };
-    
-  } catch (error) {
-    console.error('구매 처리 오류:', error);
-    return {
-      success: false,
-      message: '시스템 오류: ' + error.toString()
-    };
-  }
-}
-
-// 💳 PayApp 결제 요청 (🔥 checkretry 수정)
-function requestPayAppPayment(licenseType, buyerEmail, buyerPhone, code, token, rowIndex) {
-  try {
-    updatePaymentStatus(rowIndex, 'PAYAPP_REQUESTED', '', token);
-    
-    const price = PRICE_MAP[licenseType];
-    
-    const payload = {
-      'cmd': 'payrequest',
-      'userid': CONFIG.PAYAPP_USERID,
-      'goodname': 'LittleScienceAI ' + licenseType,
-      'price': price.toString(),
-      'recvphone': buyerPhone,
-      'memo': 'LittleScienceAI ' + licenseType + ' 구매 (' + buyerEmail + ')',
-      'feedbackurl': getFeedbackUrl(),
-      'var1': token,
-      'var2': code,
-      'checkretry': 'n',  // 🔥 'y' → 'n' 변경 (재시도 비활성화)
-      'smsuse': 'n',
-      'popupyn': 'y',
-      'windowmode': 'popup',
-      'frameyn': 'n'
-    };
-    
-    console.log('PayApp 요청 데이터:', payload);
-    
-    const response = UrlFetchApp.fetch('https://api.payapp.kr/oapi/apiLoad.html', {
-      'method': 'POST',
-      'payload': payload,
-      'muteHttpExceptions': true
-    });
-    
-    const responseText = response.getContentText();
-    console.log('PayApp 응답:', responseText);
-    
-    const params = parseQueryString(responseText);
-    
-    if (params['state'] === '1') {
-      const mulNo = params['mul_no'];
-      const payUrl = params['payurl'];
-      
-      updatePaymentStatus(rowIndex, 'PAYAPP_REQUESTED', mulNo, token);
-      
-      console.log('PayApp 결제 요청 성공:', mulNo);
-      
-      return {
-        success: true,
-        payUrl: payUrl,
-        mulNo: mulNo,
-        message: 'PayApp 결제창으로 이동합니다.'
-      };
-    } else {
-      const errorMessage = params['errorMessage'] || 'PayApp 결제 요청 실패';
-      console.error('PayApp 요청 실패:', errorMessage);
-      
-      updatePaymentStatus(rowIndex, 'FAILED', '', token);
-      clearReservation(rowIndex);
-      
-      return {
-        success: false,
-        message: errorMessage
-      };
-    }
-    
-  } catch (error) {
-    console.error('PayApp 요청 오류:', error);
-    updatePaymentStatus(rowIndex, 'FAILED', '', token);
-    clearReservation(rowIndex);
-    
-    return {
-      success: false,
-      message: 'PayApp 연동 오류: ' + error.toString()
-    };
-  }
-}
-
-// 📞 PayApp 콜백 처리 (🔥 모든 가능성 체크)
-function handlePayAppCallback(data) {
-  try {
-    // 🔥 모든 가능성을 체크하는 슈퍼 디버깅
-    const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getActiveSheet();
-    
-    console.log('=== PayApp 슈퍼 디버깅 시작 ===');
-    console.log('전체 받은 데이터:', JSON.stringify(data, null, 2));
-    console.log('받은 모든 키:', Object.keys(data));
-    
-    // A500-A510에 모든 가능성 기록
-    const baseInfo = `${new Date()} | mul_no: ${data.mul_no}`;
-    sheet.getRange('A500').setValue(baseInfo);
-    
-    // 🔥 상태 필드 가능성들 체크
-    const statusFields = ['pay_state', 'status', 'state', 'result', 'payment_status', 'pay_result', 'transaction_status', 'paystate', 'payStatus'];
-    let foundStatus = null;
-    let statusValue = null;
-    
-    for (let field of statusFields) {
-      if (data[field] !== undefined) {
-        foundStatus = field;
-        statusValue = data[field];
-        console.log(`✅ 상태 필드 발견: ${field} = ${statusValue}`);
-        sheet.getRange('A501').setValue(`상태필드: ${field} = ${statusValue}`);
-        break;
-      }
-    }
-    
-    if (!foundStatus) {
-      console.log('❌ 상태 필드를 찾을 수 없음');
-      sheet.getRange('A501').setValue('상태필드: 없음');
-    }
-    
-    // 🔥 token/code 필드 가능성들 체크
-    const tokenFields = ['var1', 'token', 'custom1', 'param1', 'user_data1', 'merchant_data1', 'order_data1', 'userData1'];
-    const codeFields = ['var2', 'code', 'custom2', 'param2', 'user_data2', 'merchant_data2', 'order_data2', 'userData2'];
-    
-    let foundToken = null;
-    let tokenValue = null;
-    let foundCode = null;
-    let codeValue = null;
-    
-    for (let field of tokenFields) {
-      if (data[field] !== undefined) {
-        foundToken = field;
-        tokenValue = data[field];
-        console.log(`✅ 토큰 필드 발견: ${field} = ${tokenValue}`);
-        break;
-      }
-    }
-    
-    for (let field of codeFields) {
-      if (data[field] !== undefined) {
-        foundCode = field;
-        codeValue = data[field];
-        console.log(`✅ 코드 필드 발견: ${field} = ${codeValue}`);
-        break;
-      }
-    }
-    
-    sheet.getRange('A502').setValue(`토큰: ${foundToken ? foundToken + '=' + tokenValue : '없음'}`);
-    sheet.getRange('A503').setValue(`코드: ${foundCode ? foundCode + '=' + codeValue : '없음'}`);
-    
-    // 🔥 성공 상태 값들 체크
-    const successValues = ['4', 4, 'success', 'SUCCESS', 'complete', 'COMPLETE', 'paid', 'PAID', '1', 1, 'ok', 'OK', 'true', true];
-    const isSuccess = statusValue && successValues.includes(statusValue);
-    
-    console.log(`상태값 ${statusValue}가 성공인가?`, isSuccess);
-    sheet.getRange('A504').setValue(`성공여부: ${isSuccess ? '성공' : '실패/알수없음'} (값: ${statusValue})`);
-    
-    // 🔥 기본 검증
-    const userid = data.userid;
-    const linkval = data.linkval;
-    const mulNo = data.mul_no;
-    
-    if (!userid || !linkval || !mulNo) {
-      console.error('필수 파라미터 누락');
-      sheet.getRange('A505').setValue(`필수파라미터: 누락 (userid: ${!!userid}, linkval: ${!!linkval}, mulNo: ${!!mulNo})`);
-      return 'FAIL';
-    }
-    
-    if (userid !== CONFIG.PAYAPP_USERID) {
-      console.error('userid 불일치');
-      sheet.getRange('A505').setValue(`userid 불일치: ${userid} != ${CONFIG.PAYAPP_USERID}`);
-      return 'FAIL';
-    }
-    
-    sheet.getRange('A505').setValue('필수파라미터: 모두 정상');
-    
-    // 🔥 mul_no로 거래 찾기
-    const dataSheet = sheet.getDataRange().getValues();
-    let targetRowIndex = -1;
-    let targetBuyerEmail = '';
-    let targetLicenseType = '';
-    let matchedRow = null;
-    
-    for (let i = 1; i < dataSheet.length; i++) {
-      const sheetMulNo = dataSheet[i][11];
-      
-      if (sheetMulNo === mulNo || String(sheetMulNo) === String(mulNo) || Number(sheetMulNo) === Number(mulNo)) {
-        targetRowIndex = i + 1;
-        targetBuyerEmail = dataSheet[i][7];
-        targetLicenseType = dataSheet[i][1];
         
-        matchedRow = {
-          rowIndex: i + 1,
-          code: dataSheet[i][0],
-          licenseType: dataSheet[i][1],
-          email: dataSheet[i][7],
-          status: dataSheet[i][9],
-          mulNo: dataSheet[i][11],
-          token: dataSheet[i][12]
-        };
-        
-        console.log('✅ mul_no 매칭 성공!', matchedRow);
-        sheet.getRange('A506').setValue(`매칭성공: 행${i+1} ${dataSheet[i][7]}`);
-        break;
-      }
-    }
-    
-    if (targetRowIndex === -1) {
-      console.error('❌ mul_no 매칭 실패:', mulNo);
-      sheet.getRange('A506').setValue(`매칭실패: mul_no ${mulNo} 못찾음`);
-      return 'SUCCESS';
-    }
-    
-    // 🔥 결제 처리 결정
-    if (isSuccess) {
-      console.log('🎉 결제 성공으로 판단, PAID 처리 시작');
-      sheet.getRange('A507').setValue('결제성공판단: PAID 처리중');
-      
-      // PAID 상태 업데이트
-      sheet.getRange(targetRowIndex, 10).setValue('PAID');
-      
-      // 이메일 발송
-      try {
-        const emailCode = codeValue || matchedRow.code;
-        sendCodeEmail(emailCode, targetLicenseType, targetBuyerEmail);
-        console.log('✅ 이메일 발송 완료');
-        sheet.getRange('A508').setValue('이메일발송: 완료');
-      } catch (emailError) {
-        console.error('❌ 이메일 발송 오류:', emailError);
-        sheet.getRange('A508').setValue(`이메일발송: 실패 ${emailError.toString()}`);
-      }
-      
-      sheet.getRange('A509').setValue('최종결과: 성공처리완료');
-      return 'SUCCESS';
-      
-    } else if (statusValue) {
-      // 실패 상태들
-      const failValues = ['8', '16', '32', '9', '64', '70', '71', 'cancel', 'fail', 'error', 'CANCEL', 'FAIL', 'ERROR', 'false', false, '0', 0];
-      const isFail = failValues.includes(statusValue);
-      
-      if (isFail) {
-        console.log('❌ 결제 실패로 판단');
-        sheet.getRange('A507').setValue('결제실패판단: FAILED 처리중');
-        sheet.getRange(targetRowIndex, 10).setValue('FAILED');
-        clearReservation(targetRowIndex);
-        sheet.getRange('A509').setValue('최종결과: 실패처리완료');
-        return 'SUCCESS';
-      } else {
-        console.log('⚠️ 알 수 없는 상태:', statusValue);
-        sheet.getRange('A507').setValue(`알수없는상태: ${statusValue}`);
-        sheet.getRange('A509').setValue('최종결과: 대기상태유지');
-        return 'SUCCESS';
-      }
-    } else {
-      console.log('⚠️ 상태 값이 없음');
-      sheet.getRange('A507').setValue('상태값없음: 판단불가');
-      sheet.getRange('A509').setValue('최종결과: 상태미확인');
-      return 'SUCCESS';
-    }
-    
-  } catch (error) {
-    console.error('❌ 콜백 처리 치명적 오류:', error);
-    try {
-      const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getActiveSheet();
-      sheet.getRange('A510').setValue(`치명적오류: ${error.toString()}`);
-    } catch (logError) {
-      // 로그 오류도 무시
-    }
-    return 'SUCCESS';
-  }
-}
-
-// 🔄 상태 업데이트 함수들
-function updatePaymentStatus(rowIndex, status, mulNo, token) {
-  try {
-    const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getActiveSheet();
-    sheet.getRange(rowIndex, 10).setValue(status);      // J열(9번 인덱스) = status  
-    if (mulNo) sheet.getRange(rowIndex, 11).setValue(mulNo);  // K열(10번 인덱스) = mul_no
-    if (token) sheet.getRange(rowIndex, 12).setValue(token);  // L열(11번 인덱스) = token
-  } catch (error) {
-    console.error('상태 업데이트 오류:', error);
-  }
-}
-
-function clearReservation(rowIndex) {
-  try {
-    const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getActiveSheet();
-    sheet.getRange(rowIndex, 9).setValue('');   // I열(이메일) 클리어
-    sheet.getRange(rowIndex, 10).setValue('');  // J열(상태/날짜) 클리어
-    sheet.getRange(rowIndex, 11).setValue('');  // K열(mul_no) 클리어  
-    sheet.getRange(rowIndex, 12).setValue('');  // L열(token) 클리어
-  } catch (error) {
-    console.error('예약 해제 오류:', error);
-  }
-}
-
-// 📧 이메일 발송
-function sendCodeEmail(code, licenseType, buyerEmail) {
-  try {
-    const subject = '[LittleScienceAI] ' + licenseType + ' 발급 완료';
-    
-    const textBody = '안녕하세요! LittleScienceAI를 구매해주셔서 감사합니다.\n\n' +
-                     '이용권 코드: ' + code + '\n' +
-                     '이용기간: ' + licenseType + '\n' +
-                     '접속 링크: https://little-science-ai-918631854597.asia-northeast3.run.app/\n\n' +
-                     '이용 방법:\n' +
-                     '1. 위 링크로 접속\n' +
-                     '2. 인증 키에 코드 입력\n' +
-                     '3. 과학 논문 탐색 시작!\n\n' +
-                     '문의사항이 있으시면 언제든 연락주세요.\n\n' +
-                     '감사합니다.\n' +
-                     'LittleScienceAI 팀';
-    
-    const htmlBody = '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LittleScienceAI 이용권 발급</title></head><body style="margin: 0; padding: 0; font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; line-height: 1.6;"><div style="max-width: 600px; margin: 20px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"><div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px 20px; text-align: center; color: white;"><h1 style="margin: 0; font-size: 28px; font-weight: bold;">LittleScienceAI</h1><p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">과학논문 주제 탐색 도우미</p></div><div style="padding: 30px 20px;"><div style="text-align: center; margin-bottom: 30px;"><h2 style="color: #333; margin: 0 0 10px 0; font-size: 24px;">이용권 발급 완료</h2><p style="color: #666; margin: 0; font-size: 16px;">구매해주셔서 감사합니다!</p></div><div style="background: #f8f9ff; border: 2px solid #667eea; border-radius: 12px; padding: 25px; margin: 20px 0; text-align: center;"><div style="color: #667eea; font-size: 18px; font-weight: bold; margin-bottom: 15px;">' + licenseType + '</div><div style="background: white; border: 2px dashed #667eea; border-radius: 8px; padding: 20px; margin: 15px 0;"><p style="color: #333; margin: 0 0 10px 0; font-size: 14px; font-weight: bold;">이용권 코드</p><div style="font-size: 24px; font-weight: bold; color: #667eea; letter-spacing: 2px; font-family: \'Courier New\', monospace; user-select: all; -webkit-user-select: all; -moz-user-select: all; -ms-user-select: all; cursor: text; padding: 10px; background: #f8f9ff; border-radius: 6px;">' + code + '</div><p style="color: #888; margin: 10px 0 0 0; font-size: 12px;">위 코드를 마우스로 선택하여 복사하세요</p></div></div><div style="background: #e8f5e8; border: 1px solid #28a745; border-radius: 12px; padding: 25px; margin: 20px 0;"><h3 style="color: #28a745; margin: 0 0 15px 0; font-size: 18px;">이용 방법</h3><ol style="color: #333; margin: 0; padding-left: 20px;"><li style="margin-bottom: 8px;">아래 링크로 접속하세요</li><li style="margin-bottom: 8px;">인증 키 입력란에 위의 이용권 코드를 입력하세요</li><li style="margin-bottom: 8px;">과학 논문 탐색을 시작하세요!</li></ol></div><div style="text-align: center; margin: 30px 0;"><a href="https://little-science-ai-918631854597.asia-northeast3.run.app/" style="display: inline-block; background: linear-gradient(45deg, #28a745, #20c997); color: white; text-decoration: none; padding: 15px 30px; border-radius: 25px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 12px rgba(40,167,69,0.3);">LittleScienceAI 접속하기</a></div><div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin: 20px 0;"><p style="color: #856404; margin: 0; font-size: 14px; text-align: center;"><strong>이용권 유효기간:</strong> 코드 입력 후 ' + licenseType.replace('이용권', '') + ' 동안 이용 가능</p></div></div><div style="background: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #e9ecef;"><p style="color: #666; margin: 0 0 10px 0; font-size: 14px;">문의사항이 있으시면 언제든 연락주세요</p><div style="margin: 15px 0;"><span style="background: #667eea; color: white; padding: 6px 12px; border-radius: 15px; font-size: 12px; font-weight: bold;">카카오톡 채널: 리틀사이언스AI</span></div><p style="color: #999; margin: 15px 0 0 0; font-size: 12px;">LittleScienceAI 팀<br>이 이메일은 자동으로 발송되었습니다.</p></div></div></body></html>';
-    
-    GmailApp.sendEmail(
-      buyerEmail, 
-      subject, 
-      textBody,
-      {
-        htmlBody: htmlBody
-      }
-    );
-    
-    console.log('HTML 이메일 발송 완료:', buyerEmail);
-    
-  } catch (error) {
-    console.error('이메일 발송 오류:', error);
-  }
-}
-
-// 🎨 HTML 페이지 생성
-function createRedirectPage(payUrl, mulNo) {
-  return '<!DOCTYPE html><html><head><title>PayApp 결제창 이동</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body { font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; } .redirect { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); display: inline-block; max-width: 500px; } h1 { color: #333; margin-bottom: 20px; } p { color: #666; margin: 10px 0; } .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; } @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style><script>setTimeout(() => { window.location.href = \'' + payUrl + '\'; }, 1000);</script></head><body><div class="redirect"><h1>🔄 PayApp 결제창 이동</h1><div class="spinner"></div><p>PayApp 결제창으로 이동 중입니다...</p><p><small>결제 번호: ' + mulNo + '</small></p></div></body></html>';
-}
-
-// 🔥 에러 페이지 HTML 생성 함수 (응답 형식 통일)
-function createErrorPageHtml(message) {
-  return '<!DOCTYPE html><html><head><title>오류</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body { font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; } .error { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); display: inline-block; max-width: 500px; } h1 { color: #e74c3c; margin-bottom: 20px; } p { color: #666; margin: 10px 0; } .close-btn { background: #e74c3c; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin-top: 20px; font-size: 16px; }</style></head><body><div class="error"><h1>❌ 오류</h1><p><strong>' + message + '</strong></p><button class="close-btn" onclick="window.close()">창 닫기</button></div></body></html>';
-}
-
-// 기존 createErrorPage 함수 (하위 호환성)
-function createErrorPage(message) {
-  return HtmlService.createHtmlOutput(createErrorPageHtml(message));
-}
-
-// 🔍 관리자 함수들
-function getCurrentUrl() {
-  const devUrl = ScriptApp.getService().getUrl();
-  const prodUrl = CONFIG.FEEDBACK_URL;
-  
-  console.log('개발 모드 URL:', devUrl);
-  console.log('실제 배포 URL:', prodUrl);
-  console.log('PayApp FeedbackURL에 설정할 URL:', prodUrl);
-  
-  return {
-    dev: devUrl,
-    production: prodUrl,
-    useForPayApp: prodUrl
-  };
-}
-
-function testPurchase() {
-  console.log('=== 구매 테스트 시작 ===');
-  const result = purchaseLicense("7일 이용권", "test@email.com");
-  console.log('테스트 결과:', result);
-  console.log('=== 구매 테스트 완료 ===');
-  return result;
-}
-
-function checkStock() {
-  try {
-    const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getActiveSheet();
-    const data = sheet.getDataRange().getValues();
-    
-    const stock = {
-      '7일 이용권': 0,
-      '15일 이용권': 0,
-      '30일 이용권': 0
-    };
-    
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][4] === '' && (!data[i][9] || data[i][9] === '')) {
-        const type = data[i][1];
-        if (stock.hasOwnProperty(type)) {
-          stock[type]++;
+        function selectLicense(licenseType, price) {
+            if (isProcessing) return;
+            
+            document.querySelectorAll('.license-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            event.currentTarget.classList.add('selected');
+            
+            if (licenseType === '7일 이용권') {
+                document.getElementById('license7').checked = true;
+            } else if (licenseType === '15일 이용권') {
+                document.getElementById('license15').checked = true;
+            } else if (licenseType === '30일 이용권') {
+                document.getElementById('license30').checked = true;
+            }
+            
+            selectedLicense = licenseType;
+            selectedPrice = price;
+            
+            updatePurchaseButton();
+            hideErrorMessage();
         }
-      }
-    }
-    
-    console.log('📦 현재 재고 현황:', stock);
-    return stock;
-    
-  } catch (error) {
-    console.error('재고 확인 오류:', error);
-    return null;
-  }
-}
-
-// 🧪 === 테스트 함수들 ===
-
-function testEmailSending() {
-  console.log('=== 이메일 발송 테스트 시작 ===');
-  
-  try {
-    console.log('하드코딩 값으로 이메일 발송 테스트');
-    sendCodeEmail('TEST-CODE-123', '7일 이용권', 'test@gmail.com');
-    console.log('✅ 이메일 발송 완료');
-  } catch (error) {
-    console.error('❌ 이메일 발송 실패:', error);
-  }
-  
-  console.log('=== 이메일 발송 테스트 완료 ===');
-}
-
-function testSpreadsheetSearch() {
-  console.log('=== 스프레드시트 검색 테스트 시작 ===');
-  
-  try {
-    const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getActiveSheet();
-    const data = sheet.getDataRange().getValues();
-    
-    console.log('스프레드시트 전체 행 수:', data.length);
-    console.log('헤더:', data[0]);
-    
-    const statusCount = {};
-    for (let i = 1; i < data.length; i++) {
-      const status = data[i][9] || 'EMPTY';
-      statusCount[status] = (statusCount[status] || 0) + 1;
-    }
-    console.log('상태별 데이터 개수:', statusCount);
-    
-    console.log('=== PAYAPP_REQUESTED 상태 데이터들 ===');
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][9] === 'PAYAPP_REQUESTED') {
-        console.log(`행 ${i+1}:`, {
-          code: data[i][0],
-          licenseType: data[i][1],
-          email: data[i][7],
-          mulNo: data[i][11],
-          token: data[i][12]
+        
+        function updatePurchaseButton() {
+            const btn = document.getElementById('purchaseBtn');
+            const email = document.getElementById('buyerEmail').value;
+            const phone = document.getElementById('buyerPhone').value;
+            
+            if (selectedLicense && email && phone && !isProcessing) {
+                btn.disabled = false;
+                btn.textContent = `${selectedLicense} PayApp으로 구매하기 (${selectedPrice.toLocaleString()}원)`;
+            } else if (isProcessing) {
+                btn.disabled = true;
+                btn.textContent = '처리 중...';
+            } else {
+                btn.disabled = true;
+                btn.textContent = '정보를 모두 입력한 후 구매하기';
+            }
+        }
+        
+        function showErrorMessage(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            errorText.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(hideErrorMessage, 5000);
+        }
+        
+        function hideErrorMessage() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+        
+        // 이메일, 휴대폰번호 입력 시 버튼 업데이트
+        document.getElementById('buyerEmail').addEventListener('input', updatePurchaseButton);
+        document.getElementById('buyerPhone').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/[^0-9]/g, '');
+            if (value.length > 11) value = value.slice(0, 11);
+            e.target.value = value;
+            updatePurchaseButton();
         });
-      }
-    }
-    
-  } catch (error) {
-    console.error('❌ 스프레드시트 검색 테스트 실패:', error);
-  }
-  
-  console.log('=== 스프레드시트 검색 테스트 완료 ===');
-}
+        
+        // 🔥 Form Submit 방식으로 결제 처리 (CORS 문제 해결)
+        document.getElementById('purchaseForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (isProcessing) return;
+            
+            if (!selectedLicense) {
+                showErrorMessage('이용권을 선택해주세요.');
+                return;
+            }
+            
+            const buyerEmail = document.getElementById('buyerEmail').value;
+            const buyerPhone = document.getElementById('buyerPhone').value;
+            
+            if (!buyerEmail) {
+                showErrorMessage('이메일을 입력해주세요.');
+                return;
+            }
+            
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(buyerEmail)) {
+                showErrorMessage('올바른 이메일 주소를 입력해주세요.');
+                return;
+            }
+            
+            if (!buyerPhone) {
+                showErrorMessage('휴대전화번호를 입력해주세요.');
+                return;
+            }
+            
+            const phoneRegex = /^01[0-9]{8,9}$/;
+            if (!phoneRegex.test(buyerPhone)) {
+                showErrorMessage('올바른 휴대전화번호를 입력해주세요. (예: 01012345678)');
+                return;
+            }
+            
+            isProcessing = true;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+            hideErrorMessage();
+            updatePurchaseButton();
+            
+            // 🔥 Form submit 방식으로 직접 백엔드 호출 (CORS 우회)
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'https://script.google.com/macros/s/AKfycbyo5hXHldVVnYOpwhI9DUW5ut7vJt1ivjfQ3QP1I3gC_teo3J408-3WhgImM-qNyBIo/exec';
+            form.target = '_blank'; // 새 창에서 열기
+            
+            // 파라미터 추가
+            const params = {
+                action: 'purchase',
+                licenseType: selectedLicense,
+                buyerEmail: buyerEmail,
+                buyerPhone: buyerPhone
+            };
+            
+            for (const [key, value] of Object.entries(params)) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
+            }
+            
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+            
+            // 성공 메시지 표시
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'result success';
+            resultDiv.innerHTML = `
+                <strong>✅ PayApp 결제창으로 이동</strong><br>
+                새 창에서 PayApp 결제가 진행됩니다.<br>
+                결제 완료 후 <strong>${buyerEmail}</strong>로 이용권 코드가 발송됩니다.<br><br>
+                <button onclick="location.reload()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; margin-top: 10px;">
+                    추가 구매하기
+                </button>
+            `;
+            resultDiv.style.display = 'block';
+            
+            // 3초 후 폼 다시 활성화
+            setTimeout(() => {
+                isProcessing = false;
+                updatePurchaseButton();
+                document.getElementById('loading').style.display = 'none';
+            }, 3000);
+        });
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('LittleScienceAI PayApp 페이지 로드 완료');
+            
+            window.addEventListener('pageshow', function(event) {
+                if (event.persisted) {
+                    isProcessing = false;
+                    updatePurchaseButton();
+                    document.getElementById('loading').style.display = 'none';
+                    hideErrorMessage();
+                }
+            });
+        });
+        
+        window.addEventListener('beforeunload', function(event) {
+            if (isProcessing) {
+                event.preventDefault();
+                event.returnValue = '결제가 진행 중입니다. 페이지를 떠나시겠습니까?';
+                return event.returnValue;
+            }
+        });
+    </script>
+</body>
+</html>
